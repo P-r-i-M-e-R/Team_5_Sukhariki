@@ -14,10 +14,10 @@
 
 This project implements and compares two control strategies for a **two-link planar robot manipulator**:
 
-- **Lyapunov-based nonlinear controller** — model-based control law derived from Lyapunov stability theory, guaranteeing asymptotic stability of the tracking error.
-- **PID controller** — classical linear feedback controller used as a baseline for comparison.
+- **Lyapunov-based nonlinear controller** — model-based PD controller with gravity compensation and a formal Lyapunov stability guarantee.
+- **PID controller** — classical decentralized controller used as a baseline.
 
-The dynamic model is derived using the **Euler–Lagrange formulation**. Simulation results demonstrate that the Lyapunov-based controller provides superior tracking performance, faster convergence, and bounded control effort compared to PID.
+The goal is **stabilization (regulation)**: drive the manipulator from an arbitrary initial state to a constant desired configuration \( \theta_d \).
 
 ---
 
@@ -31,102 +31,157 @@ The dynamic model is derived using the **Euler–Lagrange formulation**. Simulat
   <em>Figure 1: A simplified model of a two-link planar robot manipulator</em>
 </p>
 
-The system consists of two rigid links of lengths $L_1$ and $L_2$ with point masses $M_1$ and $M_2$ concentrated at the end of each link. The generalized coordinates are the joint angles $\theta_1$ and $\theta_2$.
+The system consists of two rigid links of lengths \( l_1 \) and \( l_2 \) with point masses \( m_1 \) and \( m_2 \) concentrated at the end of each link.
+
+---
 
 ### 2.1. Forward Kinematics
 
-The Cartesian coordinates of the joint masses are:
+\[
+x_1 = l_1 \cos\theta_1, \qquad y_1 = l_1 \sin\theta_1
+\]
 
-$$x_1 = L_1 \cos\theta_1, \qquad y_1 = L_1 \sin\theta_1$$
+\[
+x_2 = l_1 \cos\theta_1 + l_2 \cos(\theta_1 + \theta_2), \qquad
+y_2 = l_1 \sin\theta_1 + l_2 \sin(\theta_1 + \theta_2)
+\]
 
-$$x_2 = L_1 \cos\theta_1 + L_2 \cos(\theta_1 + \theta_2), \qquad y_2 = L_1 \sin\theta_1 + L_2 \sin(\theta_1 + \theta_2)$$
+---
 
-### 2.2. Euler–Lagrange Dynamics
+### 2.2. Dynamics (Euler–Lagrange Form)
 
-The equations of motion are derived from the Lagrangian $\mathcal{L} = T - U$ where $T$ is the kinetic energy and $U$ is the potential energy:
+\[
+M(\theta)\,\ddot{\theta} + C(\theta,\dot{\theta})\,\dot{\theta} + G(\theta) = a
+\]
 
-$$T = \frac{1}{2}(M_1 + M_2)L_1^2\,\dot\theta_1^2 + \frac{1}{2}M_2 L_2^2(\dot\theta_1 + \dot\theta_2)^2 + M_2 L_1 L_2 \dot\theta_1(\dot\theta_1 + \dot\theta_2)\cos\theta_2$$
+---
 
-$$U = (M_1 + M_2)\,g\,L_1\sin\theta_1 + M_2\,g\,L_2\sin(\theta_1 + \theta_2)$$
+### Inertia Matrix
 
-The resulting standard manipulator equation is:
+\[
+M(\theta) =
+\begin{bmatrix}
+(m_1+m_2)l_1^2 + m_2 l_2^2 + 2 m_2 l_1 l_2 \cos\theta_2 &
+m_2 l_2^2 + m_2 l_1 l_2 \cos\theta_2 \\
+m_2 l_2^2 + m_2 l_1 l_2 \cos\theta_2 &
+m_2 l_2^2
+\end{bmatrix}
+\]
 
-$$M(\theta)\,\ddot\theta + C(\theta,\dot\theta)\,\dot\theta + G(\theta) = \tau$$
+---
 
-where:
+### Coriolis and Centrifugal Matrix
 
-**Inertia matrix** $M(\theta)$:
+\[
+h = -m_2 l_1 l_2 \sin\theta_2
+\]
 
-$$M(\theta) = \begin{bmatrix} (M_1 + M_2)L_1^2 + M_2 L_2^2 + 2M_2 L_1 L_2 \cos\theta_2 & M_2 L_2^2 + M_2 L_1 L_2 \cos\theta_2 \\ M_2 L_2^2 + M_2 L_1 L_2 \cos\theta_2 & M_2 L_2^2 \end{bmatrix}$$
+\[
+C(\theta,\dot{\theta}) =
+\begin{bmatrix}
+h\,\dot{\theta}_2 & h\,(\dot{\theta}_1 + \dot{\theta}_2) \\
+-h\,\dot{\theta}_1 & 0
+\end{bmatrix}
+\]
 
-**Coriolis and centrifugal matrix** $C(\theta, \dot\theta)$:
+---
 
-$$C(\theta,\dot\theta) = \begin{bmatrix} -M_2 L_1 L_2 \sin\theta_2\;\dot\theta_2 & -M_2 L_1 L_2 \sin\theta_2\;(\dot\theta_1 + \dot\theta_2) \\ M_2 L_1 L_2 \sin\theta_2\;\dot\theta_1 & 0 \end{bmatrix}$$
+### Gravity Vector
 
-**Gravity vector** $G(\theta)$:
-
-$$G(\theta) = \begin{bmatrix} (M_1 + M_2)\,g\,L_1\cos\theta_1 + M_2\,g\,L_2\cos(\theta_1 + \theta_2) \\ M_2\,g\,L_2\cos(\theta_1 + \theta_2) \end{bmatrix}$$
+\[
+G(\theta) =
+\begin{bmatrix}
+(m_1 + m_2)\,g\,l_1\,\cos\theta_1 + m_2\,g\,l_2\,\cos(\theta_1 + \theta_2) \\
+m_2\,g\,l_2\,\cos(\theta_1 + \theta_2)
+\end{bmatrix}
+\]
 
 ---
 
 ## 3. Control Design
 
-### 3.1. Lyapunov-based Controller
+### 3.1. Lyapunov-Based Controller
 
-Define the tracking error and its derivative:
+Define the position error:
 
-$$e = \theta - \theta_d, \qquad \dot{e} = \dot\theta - \dot\theta_d$$
+\[
+e = \theta - \theta_d
+\]
 
-Introduce the composite error variable:
+The control law is:
 
-$$s = \dot{e} + \Lambda\, e$$
+\[
+a = -k_1\,e - k_2\,\dot{\theta} + G(\theta)
+\]
 
-where $\Lambda = \text{diag}(\lambda_1, \lambda_2)$ is a positive definite diagonal matrix.
+**Interpretation:**
+- \( -k_1 e \): restoring (spring-like) term  
+- \( -k_2 \dot{\theta} \): damping  
+- \( +G(\theta) \): gravity compensation  
 
-The **Lyapunov function** is chosen as:
+---
 
-$$L(t) = \frac{1}{2}\,s^T M(\theta)\,s + \frac{1}{2}\,e^T K_P\, e$$
+### Closed-Loop Dynamics
 
-where $K_P = \text{diag}(k_{p1}, k_{p2})$ is a positive definite gain matrix.
+\[
+M(\theta)\,\ddot{\theta} + C(\theta,\dot{\theta})\,\dot{\theta} + k_2\,\dot{\theta} + k_1\,e = 0
+\]
 
-The control law that guarantees $\dot{L}(t) \leq 0$ is:
+---
 
-$$\tau = M(\theta)\,(\ddot\theta_d - \Lambda\,\dot{e}) + C(\theta,\dot\theta)\,\dot\theta + G(\theta) - K_D\,s - K_P\,e$$
+### Lyapunov Function
 
-where $K_D = \text{diag}(k_{d1}, k_{d2})$ is a positive definite damping gain matrix.
+\[
+L = \frac{1}{2}\,\dot{\theta}^T M(\theta)\,\dot{\theta} + \frac{1}{2}\,k_1\,e^T e
+\]
 
-**Stability proof.** Taking the time derivative of $L(t)$ and substituting the control law yields:
+---
 
-$$\dot{L}(t) = -s^T K_D\, s \leq 0$$
+### Time Derivative
 
-Since $\dot{L}(t)$ is negative semi-definite and $L(t)$ is positive definite and radially unbounded, the system is **stable in the sense of Lyapunov**. By LaSalle's invariance principle, the tracking error converges asymptotically to zero:
+\[
+\dot{L} = -k_2\,\|\dot{\theta}\|^2 \leq 0
+\]
 
-$$e(t) \to 0, \quad \dot{e}(t) \to 0 \quad \text{as} \quad t \to \infty$$
+---
+
+### Stability Result
+
+By LaSalle’s invariance principle:
+
+\[
+e(t) \to 0, \quad \dot{\theta}(t) \to 0 \quad \text{as} \quad t \to \infty
+\]
+
+The equilibrium \( (\theta, \dot{\theta}) = (\theta_d, 0) \) is **asymptotically stable**.
+
+---
 
 ### 3.2. PID Controller
 
-The baseline PID controller is defined as:
+\[
+a_{\text{PID}} = K_P\,e + K_I \int_0^t e(\sigma)\,d\sigma + K_D\,\dot{e}
+\]
 
-$$\tau_{\text{PID}} = K_P\,e + K_I\int_0^t e(\sigma)\,d\sigma + K_D\,\dot{e}$$
-
-This controller does not exploit the manipulator dynamics and serves as a comparison baseline.
+- Independent per joint  
+- Does not compensate nonlinear dynamics  
 
 ---
 
 ## 4. Simulation Parameters
 
 | Parameter | Symbol | Value |
-|-----------|--------|-------|
-| Link 1 length | $L_1$ | 1.0 m |
-| Link 2 length | $L_2$ | 0.7 m |
-| Mass 1 | $M_1$ | 3.0 kg |
-| Mass 2 | $M_2$ | 2.0 kg |
-| Gravity | $g$ | 9.81 m/s² |
-| Desired joint 1 | $\theta_{1d}$ | $\pi/2$ rad |
-| Desired joint 2 | $\theta_{2d}$ | 0 rad |
-| Initial joint 1 | $\theta_1(0)$ | $\pi$ rad |
-| Initial joint 2 | $\theta_2(0)$ | 0.25 rad |
-| Simulation time | $T$ | 10 s |
+|----------|--------|-------|
+| Link 1 length | \( l_1 \) | 1.0 m |
+| Link 2 length | \( l_2 \) | 1.0 m |
+| Mass 1 | \( m_1 \) | 1.0 kg |
+| Mass 2 | \( m_2 \) | 2.0 kg |
+| Gravity | \( g \) | 9.81 m/s² |
+| Desired joint 1 | \( \theta_{1d} \) | \( \pi/2 \) rad |
+| Desired joint 2 | \( \theta_{2d} \) | 0 rad |
+| Initial joint 1 | \( \theta_1(0) \) | \( \pi \) rad |
+| Initial joint 2 | \( \theta_2(0) \) | 0 rad |
+| Simulation time | \( T \) | 10 s |
 
 ---
 
@@ -142,11 +197,19 @@ This controller does not exploit the manipulator dynamics and serves as a compar
   <em>Figure 2: Comparison of Lyapunov-based and PID controllers — joint angles, tracking errors, and control torques</em>
 </p>
 
-Key observations from the comparison:
+Key observations:
 
-- **Joint angles.** The Lyapunov controller drives both $\theta_1$ and $\theta_2$ to their desired values ($\theta_{1d} = \pi/2$, $\theta_{2d} = 0$) within approximately 4–5 seconds with moderate overshoot. The PID controller exhibits significantly larger oscillations and fails to converge within the simulation window.
-- **Tracking error.** The Lyapunov-based tracking errors $e_1$ and $e_2$ converge monotonically to zero after initial transients. The PID errors remain oscillatory and grow over time, indicating instability for the chosen gains.
-- **Control action.** The Lyapunov controller produces bounded torques with a peak of approximately 200 N·m, decaying to zero at steady state. The PID controller demands extremely high torques (exceeding 2500 N·m), which is impractical for real actuators.
+- **Lyapunov controller**
+  - Fast convergence (< 2 s)
+  - No steady-state error
+  - Smooth response
+
+- **PID controller**
+  - Oscillations due to coupling
+  - Slower convergence
+  - High control effort
+
+---
 
 ### 5.2. Lyapunov Function and Its Derivative
 
@@ -158,10 +221,10 @@ Key observations from the comparison:
   <em>Figure 3: Evolution of the Lyapunov function $L(t)$ (top) and its time derivative $\dot{L}(t)$ (bottom)</em>
 </p>
 
-The plots confirm the theoretical stability guarantees:
+- \( L(t) \to 0 \)
+- \( \dot{L}(t) \leq 0 \)
 
-- $L(t) > 0$ for all $t > 0$ and $L(t) \to 0$ as $t \to \infty$, which verifies the positive definiteness of the Lyapunov function.
-- $\dot{L}(t) \leq 0$ for all $t$, confirming that the energy-like function is monotonically non-increasing. This is the direct numerical validation of the inequality $\dot{L} = -s^T K_D\,s \leq 0$.
+---
 
 ### 5.3. Phase Portraits
 
@@ -173,16 +236,13 @@ The plots confirm the theoretical stability guarantees:
   <em>Figure 4: Phase portraits for Joint 1 (left) and Joint 2 (right) under the Lyapunov controller</em>
 </p>
 
-The phase portraits show the state-space trajectories $(\theta_i, \dot\theta_i)$ for each joint:
-
-- **Joint 1** starts at $(\pi, 0)$ (green dot) and spirals inward toward the target $(\pi/2, 0)$ (red star), confirming asymptotic convergence to the desired equilibrium.
-- **Joint 2** starts at $(0.25, 0)$ and follows a similar convergent spiral toward $(0, 0)$.
-
-The inward-spiraling trajectories are characteristic of a **stable focus**, consistent with the underdamped but stable behavior predicted by the Lyapunov analysis.
+- Converging spirals → asymptotic stability  
+- Stable focus behavior  
 
 ---
 
 ## 6. Project Structure
+
 
 ```
 project_1_lyapunov_control_two_link_manipulator/
@@ -207,17 +267,14 @@ project_1_lyapunov_control_two_link_manipulator/
     └── robot_motion.gif       
 ```
 
+
 ---
 
 ## 7. How to Run
 
 ```bash
-# Install dependencies
-pip install numpy scipy matplotlib
-
-# Run simulation
+pip install -r requirements.txt
 python main.py
-```
 
 ---
 
