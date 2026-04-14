@@ -1,16 +1,3 @@
-"""
-Lyapunov-based controller (PD + gravity compensation).
-
-Control law  (README eq. 3):
-    a = -k1 * (theta - theta_d) - k2 * dtheta + G(theta)
-
-Lyapunov function  (README eq. 5):
-    L = 0.5 * dtheta^T M(theta) dtheta  +  0.5 * k1 * e^T e
-
-Time derivative  (README eq. 8):
-    dL/dt = -k2 * ||dtheta||^2   <=  0
-"""
-
 import numpy as np
 from src.system import TwoLinkManipulator
 

@@ -1,19 +1,8 @@
-"""
-Main entry point.
-
-Loads parameters, runs Lyapunov and PID simulations,
-generates comparison plots, Lyapunov function plot,
-phase portrait, and animation.
-
-Usage:
-    python main.py
-"""
-
 import numpy as np
 import yaml
 
 from src.system import TwoLinkManipulator
-from src.controller import LyapunovController
+from src.lyapunov_controller import LyapunovController
 from src.pid_controller import PIDController
 from src.simulation import run_simulation
 from src.visualization import (

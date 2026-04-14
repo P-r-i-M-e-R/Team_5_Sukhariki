@@ -1,13 +1,4 @@
-"""
-Two-link planar robot manipulator (plant / system).
-
-Dynamics:  M(theta) * ddtheta + C(theta, dtheta) * dtheta + G(theta) = a
-
-All matrix formulas match Section 4.2 of the README.
-"""
-
 import numpy as np
-
 
 class TwoLinkManipulator:
     """Rigid two-link arm rotating in a vertical plane."""
@@ -36,8 +27,7 @@ class TwoLinkManipulator:
                          [M12, M22]])
 
     def coriolis_matrix(self, theta: np.ndarray, dtheta: np.ndarray) -> np.ndarray:
-        """Coriolis / centrifugal matrix C(theta, dtheta), 2x2.
-
+        """Coriolis matrix C(theta, dtheta), 2x2.
         Constructed via Christoffel symbols so that (dM - 2C) is skew-symmetric.
         """
         _, th2 = theta
@@ -55,6 +45,7 @@ class TwoLinkManipulator:
 
     def gravity_vector(self, theta: np.ndarray) -> np.ndarray:
         """Gravity vector G(theta), 2x1."""
+
         th1, th2 = theta
 
         G1 = (self.m1 + self.m2) * self.g * self.l1 * np.cos(th1) \
@@ -64,7 +55,7 @@ class TwoLinkManipulator:
         return np.array([G1, G2])
 
     # ------------------------------------------------------------------
-    # State derivative (for ODE solvers)
+    # State derivative 
     # ------------------------------------------------------------------
 
     def dynamics(self, t: float, state: np.ndarray, a: np.ndarray) -> np.ndarray:
@@ -87,7 +78,6 @@ class TwoLinkManipulator:
         C = self.coriolis_matrix(theta, dtheta)
         G = self.gravity_vector(theta)
 
-        # M * ddtheta = a - C * dtheta - G
         ddtheta = np.linalg.solve(M, a - C @ dtheta - G)
 
         return np.array([dtheta[0], dtheta[1], ddtheta[0], ddtheta[1]])

@@ -1,8 +1,4 @@
-# ============================================================
-# Parameters for the two-link manipulator Lyapunov control project
-# ============================================================
-
-# Physical parameters of the robot (Baccouch & Dodds, 2020)
+# Physical parameters of the robot 
 robot:
   m1: 1.0    # Mass of link 1 [kg]
   m2: 2.0    # Mass of link 2 [kg]
@@ -24,13 +20,11 @@ control:
   target_theta2: 0.0
 
 # Lyapunov controller gains (PD + gravity compensation)
-# Control law: a = -k1 * (theta - theta_d) - k2 * dtheta + G(theta)
 lyapunov:
   k1: 100.0
   k2:  20.0
 
 # PID controller gains (baseline for comparison)
-# Independent PID per joint, no dynamic compensation
 pid:
   kp1: 30.0
   ki1: 20.0

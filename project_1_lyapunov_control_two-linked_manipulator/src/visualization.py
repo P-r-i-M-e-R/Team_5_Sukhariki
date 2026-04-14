@@ -1,10 +1,3 @@
-"""
-Visualization module.
-
-Generates all plots and animations for the project.
-No dynamics or control logic is included here.
-"""
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -43,7 +36,7 @@ def plot_comparison(
     axs[0, 0].axhline(target[0], color="r", ls="--", lw=0.8, label=r"$\theta_{1d}$")
     axs[0, 0].axhline(target[1], color="g", ls="--", lw=0.8, label=r"$\theta_{2d}$")
     axs[0, 0].set_ylabel("Angle [rad]")
-    axs[0, 0].set_title("Joint angles — Lyapunov (PD + gravity comp.)")
+    axs[0, 0].set_title("Joint angles - Lyapunov")
     axs[0, 0].legend(fontsize=8)
 
     axs[0, 1].plot(times, states_pid[:, 0], label=r"$\theta_1$")
@@ -51,20 +44,20 @@ def plot_comparison(
     axs[0, 1].axhline(target[0], color="r", ls="--", lw=0.8)
     axs[0, 1].axhline(target[1], color="g", ls="--", lw=0.8)
     axs[0, 1].set_ylabel("Angle [rad]")
-    axs[0, 1].set_title("Joint angles — PID (baseline)")
+    axs[0, 1].set_title("Joint angles - PID")
     axs[0, 1].legend(fontsize=8)
 
     # --- row 1: tracking errors ---
     axs[1, 0].plot(times, err_lyap[:, 0], label=r"$e_1$")
     axs[1, 0].plot(times, err_lyap[:, 1], label=r"$e_2$")
     axs[1, 0].set_ylabel("Error [rad]")
-    axs[1, 0].set_title("Tracking error — Lyapunov")
+    axs[1, 0].set_title("Tracking error - Lyapunov")
     axs[1, 0].legend(fontsize=8)
 
     axs[1, 1].plot(times, err_pid[:, 0], label=r"$e_1$")
     axs[1, 1].plot(times, err_pid[:, 1], label=r"$e_2$")
     axs[1, 1].set_ylabel("Error [rad]")
-    axs[1, 1].set_title("Tracking error — PID")
+    axs[1, 1].set_title("Tracking error - PID")
     axs[1, 1].legend(fontsize=8)
 
     # --- row 2: control torques ---
@@ -72,18 +65,18 @@ def plot_comparison(
     axs[2, 0].plot(times, torques_lyap[:, 1], label=r"$\tau_2$")
     axs[2, 0].set_ylabel("Torque [N·m]")
     axs[2, 0].set_xlabel("Time [s]")
-    axs[2, 0].set_title("Control action — Lyapunov")
+    axs[2, 0].set_title("Control action - Lyapunov")
     axs[2, 0].legend(fontsize=8)
 
     axs[2, 1].plot(times, torques_pid[:, 0], label=r"$\tau_1$")
     axs[2, 1].plot(times, torques_pid[:, 1], label=r"$\tau_2$")
     axs[2, 1].set_ylabel("Torque [N·m]")
     axs[2, 1].set_xlabel("Time [s]")
-    axs[2, 1].set_title("Control action — PID")
+    axs[2, 1].set_title("Control action - PID")
     axs[2, 1].legend(fontsize=8)
 
     fig.suptitle(
-        "Comparison: Lyapunov PD+gravity vs decentralized PID",
+        "Comparison: Lyapunov vs PID",
         fontsize=13, fontweight="bold",
     )
     fig.tight_layout(rect=[0, 0, 1, 0.96])
@@ -105,13 +98,13 @@ def plot_lyapunov(times, L_vals, dL_vals, save_dir="figures"):
 
     ax1.plot(times, L_vals, color="tab:blue")
     ax1.set_ylabel(r"$L(t)$")
-    ax1.set_title(r"Lyapunov function $L(t)$ — must be non-increasing")
+    ax1.set_title(r"Lyapunov function $L(t)$")
 
     ax2.plot(times, dL_vals, color="tab:red")
     ax2.axhline(0, color="k", ls="--", lw=0.5)
     ax2.set_ylabel(r"$\dot{L}(t)$")
     ax2.set_xlabel("Time [s]")
-    ax2.set_title(r"$\dot{L}(t) = -k_2 \|\dot{\theta}\|^2$ — must be $\leq 0$")
+    ax2.set_title(r"$\dot{L}(t)$")
 
     fig.tight_layout()
     path = os.path.join(save_dir, "lyapunov_function.png")
@@ -136,7 +129,7 @@ def plot_phase_portrait(times, states, theta_d, save_dir="figures"):
     ax1.plot(theta_d[0], 0, "r*", ms=12, label="target")
     ax1.set_xlabel(r"$\theta_1$ [rad]")
     ax1.set_ylabel(r"$\dot{\theta}_1$ [rad/s]")
-    ax1.set_title("Phase portrait — Joint 1")
+    ax1.set_title("Phase portrait - Joint 1")
     ax1.legend()
 
     # Joint 2
@@ -145,7 +138,7 @@ def plot_phase_portrait(times, states, theta_d, save_dir="figures"):
     ax2.plot(theta_d[1], 0, "r*", ms=12, label="target")
     ax2.set_xlabel(r"$\theta_2$ [rad]")
     ax2.set_ylabel(r"$\dot{\theta}_2$ [rad/s]")
-    ax2.set_title("Phase portrait — Joint 2")
+    ax2.set_title("Phase portrait - Joint 2")
     ax2.legend()
 
     fig.tight_layout()
@@ -169,7 +162,7 @@ def create_animation(times, states, l1, l2, theta_d, save_path="animations/robot
     ax.set_ylim(-lim, lim)
     ax.set_aspect("equal")
     ax.grid(True, alpha=0.3)
-    ax.set_title("Two-Link Manipulator — Lyapunov Control")
+    ax.set_title("Two-Link Manipulator - Lyapunov Control")
     ax.set_xlabel("x [m]")
     ax.set_ylabel("y [m]")
 

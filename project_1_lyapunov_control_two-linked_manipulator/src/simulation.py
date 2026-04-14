@@ -1,11 +1,3 @@
-"""
-Simulation engine.
-
-Integrates the closed-loop system (plant + controller) using
-scipy.integrate.solve_ivp with RK45.  Returns time-series data
-for post-processing and visualization.
-"""
-
 import numpy as np
 from scipy.integrate import solve_ivp
 from src.system import TwoLinkManipulator
