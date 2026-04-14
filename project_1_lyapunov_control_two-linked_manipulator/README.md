@@ -30,13 +30,26 @@ The system consists of two rigid links connected by revolute joints rotating in 
 <p align="center">
   <img src="figures/manipulator_model.png" alt="Two-Link Planar Robot Manipulator Model" width="500"/>
 </p>
+
 <p align="center">
   <em>Figure 1: Schematic of the two-link planar robot manipulator.</em>
 </p>
 
+---
+
 ### State Variables
+
 The state vector $x \in \mathbb{R}^4$ is defined as:
-$$ x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T $$
+
+$$
+x =
+\begin{bmatrix}
+\theta_1 \\
+\theta_2 \\
+\dot{\theta}_1 \\
+\dot{\theta}_2
+\end{bmatrix}
+$$
 
 | Symbol | Meaning | Units |
 | :--- | :--- | :--- |
@@ -44,12 +57,27 @@ $$ x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T $$
 | $\dot{\theta}_1, \dot{\theta}_2$ | Joint angular velocities | rad/s |
 | $\ddot{\theta}_1, \ddot{\theta}_2$ | Joint angular accelerations | rad/s² |
 
+---
+
 ### Control Input
+
 The control input is the vector of applied joint torques:
-$$ a = [\tau_1, \tau_2]^T \in \mathbb{R}^2 $$
+
+$$
+a =
+\begin{bmatrix}
+\tau_1 \\
+\tau_2
+\end{bmatrix}
+\in \mathbb{R}^2
+$$
+
 *Note: In this project, $a$ denotes the physical torque vector applied to the joints.*
 
+---
+
 ### Dynamic Parameters
+
 | Symbol | Meaning | Value | Units |
 | :--- | :--- | :--- | :--- |
 | $m_1$ | Mass of Link 1 | 1.0 | kg |
@@ -63,24 +91,32 @@ $$ a = [\tau_1, \tau_2]^T \in \mathbb{R}^2 $$
 ## 3. Mathematical Specification
 
 ### Equations of Motion
+
 The dynamics are derived via Lagrangian mechanics [Baccouch & Dodds, 2020] and take the standard form:
 
-$$ M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1} $$
+$$
+M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1}
+$$
 
 Where:
-*   $\theta = [\theta_1, \theta_2]^T$
-*   $M(\theta) \in \mathbb{R}^{2\times2}$ is the symmetric, positive-definite inertia matrix.
-*   $C(\theta,\dot{\theta}) \in \mathbb{R}^{2\times2}$ is the Coriolis and centrifugal matrix.
-*   $G(\theta) \in \mathbb{R}^2$ is the gravity vector.
 
-#### Inertia Matrix $M(\theta)$
+- $\theta = [\theta_1, \theta_2]^T$
+- $M(\theta) \in \mathbb{R}^{2\times2}$ is the symmetric, positive-definite inertia matrix.
+- $C(\theta,\dot{\theta}) \in \mathbb{R}^{2\times2}$ is the Coriolis and centrifugal matrix.
+- $G(\theta) \in \mathbb{R}^2$ is the gravity vector.
+
+---
+
+### Inertia Matrix $M(\theta)$
+
 $$
-M(\theta) = \begin{bmatrix} 
-M_{11} & M_{12} \\ 
-M_{12} & M_{22} 
+M(\theta) =
+\begin{bmatrix}
+M_{11} & M_{12} \\
+M_{12} & M_{22}
 \end{bmatrix}
 $$
-With elements:
+
 $$
 \begin{aligned}
 M_{11} &= (m_1 + m_2)l_1^2 + m_2 l_2^2 + 2 m_2 l_1 l_2 \cos\theta_2 \\
@@ -89,22 +125,35 @@ M_{22} &= m_2 l_2^2
 \end{aligned}
 $$
 
-#### Coriolis Matrix $C(\theta, \dot{\theta})$
+---
+
+### Coriolis Matrix $C(\theta, \dot{\theta})$
+
 Using the auxiliary term $h = -m_2 l_1 l_2 \sin\theta_2$:
+
 $$
-C(\theta,\dot{\theta}) = \begin{bmatrix} 
-h\dot{\theta}_2 & h(\dot{\theta}_1 + \dot{\theta}_2) \\ 
--h\dot{\theta}_1 & 0 
+C(\theta,\dot{\theta}) =
+\begin{bmatrix}
+h\dot{\theta}_2 & h(\dot{\theta}_1 + \dot{\theta}_2) \\
+-h\dot{\theta}_1 & 0
 \end{bmatrix}
 $$
-**Key Property:** The matrix $\dot{M}(\theta) - 2C(\theta,\dot{\theta})$ is skew-symmetric. This implies for any vector $x \in \mathbb{R}^2$:
-$$ x^T (\dot{M} - 2C) x = 0 \implies x^T \dot{M} x = 2 x^T C x \tag{2} $$
 
-#### Gravity Vector $G(\theta)$
+**Key Property:** The matrix $\dot{M}(\theta) - 2C(\theta,\dot{\theta})$ is skew-symmetric. This implies for any vector $x \in \mathbb{R}^2$:
+
 $$
-G(\theta) = \begin{bmatrix} 
-(m_1 + m_2)g l_1 \cos\theta_1 + m_2 g l_2 \cos(\theta_1 + \theta_2) \\ 
-m_2 g l_2 \cos(\theta_1 + \theta_2) 
+x^T (\dot{M} - 2C) x = 0 \implies x^T \dot{M} x = 2 x^T C x \tag{2}
+$$
+
+---
+
+### Gravity Vector $G(\theta)$
+
+$$
+G(\theta) =
+\begin{bmatrix}
+(m_1 + m_2)g l_1 \cos\theta_1 + m_2 g l_2 \cos(\theta_1 + \theta_2) \\
+m_2 g l_2 \cos(\theta_1 + \theta_2)
 \end{bmatrix}
 $$
 
@@ -113,49 +162,59 @@ $$
 ## 4. Method Description & Stability Proof
 
 ### 4.1 Control Law
-We define the tracking error as $e = \theta - \theta_d$, where $\theta_d$ is the constant target configuration. Since $\theta_d$ is constant, $\dot{e} = \dot{\theta}$ and $\ddot{e} = \ddot{\theta}$.
 
-The proposed control law is a **PD controller with gravity compensation**:
-$$ a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3} $$
-Where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients (or diagonal matrices).
+We define the tracking error as $e = \theta - \theta_d$, where $\theta_d$ is the constant target configuration.
 
-*   $-k_1 e$: Proportional feedback (restoring force).
-*   $-k_2 \dot{\theta}$: Derivative feedback (damping).
-*   $+G(\theta)$: Exact cancellation of gravitational torques.
+$$
+a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3}
+$$
+
+---
 
 ### 4.2 Closed-Loop Dynamics
-Substituting (3) into (1):
-$$ M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = -k_1 e - k_2 \dot{\theta} + G(\theta) $$
-Canceling $G(\theta)$ and rearranging:
-$$ M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4} $$
+
+$$
+M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4}
+$$
+
+---
 
 ### 4.3 Lyapunov Stability Analysis
-To prove asymptotic stability, we use Lyapunov's Direct Method.
 
-**Step 1: Lyapunov Function Candidate**
-Consider the energy-like function $L(e, \dot{\theta})$:
-$$ L(e, \dot{\theta}) = \underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5} $$
-Since $M(\theta)$ is positive definite and $k_1 > 0$, $L(e, \dot{\theta}) > 0$ for all $(e, \dot{\theta}) \neq (0,0)$ and $L(0,0)=0$. Thus, $L$ is positive definite.
+**Lyapunov Function Candidate:**
 
-**Step 2: Time Derivative of L**
-Differentiating $L$ with respect to time:
-$$ \dot{L} = \frac{1}{2}\dot{\theta}^T \dot{M} \dot{\theta} + \dot{\theta}^T M \ddot{\theta} + k_1 e^T \dot{e} $$
-Using $\dot{e} = \dot{\theta}$ and the skew-symmetry property (2) ($\frac{1}{2}\dot{\theta}^T \dot{M} \dot{\theta} = \dot{\theta}^T C \dot{\theta}$):
-$$ \dot{L} = \dot{\theta}^T C \dot{\theta} + \dot{\theta}^T M \ddot{\theta} + k_1 e^T \dot{\theta} $$
-Factor out $\dot{\theta}^T$:
-$$ \dot{L} = \dot{\theta}^T (M \ddot{\theta} + C \dot{\theta}) + k_1 e^T \dot{\theta} \tag{6} $$
+$$
+L(e, \dot{\theta}) =
+\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}
++
+\frac{1}{2}k_1 e^T e
+\tag{5}
+$$
 
-**Step 3: Substitution and Simplification**
-From the closed-loop dynamics (4), we have $M \ddot{\theta} + C \dot{\theta} = -k_2 \dot{\theta} - k_1 e$. Substituting this into (6):
-$$ \dot{L} = \dot{\theta}^T (-k_2 \dot{\theta} - k_1 e) + k_1 e^T \dot{\theta} $$
-$$ \dot{L} = -k_2 \dot{\theta}^T \dot{\theta} - k_1 \dot{\theta}^T e + k_1 e^T \dot{\theta} $$
-Since $\dot{\theta}^T e$ is a scalar, it equals its transpose $e^T \dot{\theta}$. These terms cancel:
-$$ \dot{L} = -k_2 \| \dot{\theta} \|^2 \tag{7} $$
+---
+
+**Time Derivative:**
+
+$$
+\dot{L} =
+\dot{\theta}^T (M \ddot{\theta} + C \dot{\theta}) + k_1 e^T \dot{\theta}
+\tag{6}
+$$
+
+---
+
+**Final Result:**
+
+$$
+\dot{L} = -k_2 \| \dot{\theta} \|^2
+\tag{7}
+$$
+
+---
 
 **Conclusion:**
-Since $k_2 > 0$, $\dot{L} \leq 0$ for all states. $\dot{L} = 0$ implies $\dot{\theta} = 0$.
-If $\dot{\theta} \equiv 0$, then $\ddot{\theta} \equiv 0$. Substituting into (4) gives $k_1 e = 0 \implies e = 0$.
-By **LaSalle's Invariance Principle**, the equilibrium point $(e, \dot{\theta}) = (0,0)$ is **globally asymptotically stable**.
+
+Since $k_2 > 0$, $\dot{L} \leq 0$. By LaSalle’s invariance principle, the equilibrium $(e, \dot{\theta}) = (0,0)$ is globally asymptotically stable.
 
 ---
 
@@ -163,16 +222,29 @@ By **LaSalle's Invariance Principle**, the equilibrium point $(e, \dot{\theta}) 
 
 The control algorithm executed at each time step $t$:
 
-1.  **Read State:** Obtain current $\theta(t)$ and $\dot{\theta}(t)$.
-2.  **Compute Error:** $e = \theta_d - \theta(t)$.
-3.  **Compute Dynamics Matrices:** Calculate $M(\theta)$, $C(\theta, \dot{\theta})$, and $G(\theta)$ using current state.
-4.  **Compute Control Input:**
-    $$ a(t) = -k_1 e - k_2 \dot{\theta}(t) + G(\theta) $$
-5.  **Apply Torque:** Apply $a(t)$ to the plant.
-6.  **Integrate Dynamics:** Solve $\ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)$ to update state for $t+\Delta t$.
+- **Read State:** Obtain current $\theta(t)$ and $\dot{\theta}(t)$.
+
+- **Compute Error:**
+$$
+e = \theta_d - \theta(t)
+$$
+
+- **Compute Dynamics Matrices:** Calculate $M(\theta)$, $C(\theta, \dot{\theta})$, and $G(\theta)$ using current state.
+
+- **Compute Control Input:**
+$$
+a(t) = -k_1 e - k_2 \dot{\theta}(t) + G(\theta)
+$$
+
+- **Apply Torque:** Apply $a(t)$ to the plant.
+
+- **Integrate Dynamics:**
+$$
+\ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)
+$$
+to update state for $t + \Delta t$.
 
 ---
-
 ## 6. Experimental Setup
 
 | Parameter | Value | Description |
