@@ -21,7 +21,30 @@ The goal is **stabilization (regulation)** to a constant target configuration $\
 
 ---
 
-## 2. Manipulator Model
+## 2. Notation Table (All Symbols Explained)
+
+| Symbol | Meaning | Units |
+|--------|--------|------|
+| $\theta = [\theta_1, \theta_2]^T$ | Joint angles vector | rad |
+| $\dot{\theta}$ | Joint velocities | rad/s |
+| $\ddot{\theta}$ | Joint accelerations | rad/s² |
+| $\theta_d$ | Desired joint configuration | rad |
+| $e = \theta - \theta_d$ | Position error | rad |
+| $a = [\tau_1, \tau_2]^T$ | Control input (torques) | N·m |
+| $M(\theta)$ | Inertia matrix | — |
+| $C(\theta,\dot{\theta})$ | Coriolis and centrifugal matrix | — |
+| $G(\theta)$ | Gravity vector | N·m |
+| $k_1$ | Proportional gain ($k_1 > 0$) | — |
+| $k_2$ | Derivative gain ($k_2 > 0$) | — |
+| $L$ | Lyapunov function | — |
+| $\dot{L}$ | Time derivative of Lyapunov function | — |
+| $m_1, m_2$ | Link masses | kg |
+| $l_1, l_2$ | Link lengths | m |
+| $g$ | Gravitational acceleration | m/s² |
+
+---
+
+## 3. Manipulator Model
 
 <p align="center">
   <img src="figures/manipulator_model.png" alt="Two-Link Planar Robot Manipulator" width="600"/>
@@ -31,20 +54,25 @@ The goal is **stabilization (regulation)** to a constant target configuration $\
   <em>Figure 1: A simplified model of a two-link planar robot manipulator</em>
 </p>
 
-The system consists of two rigid links with lengths $l_1, l_2$ and masses $m_1, m_2$.
+---
+
+### 3.1 Forward Kinematics
+
+$$
+x_1 = l_1 \cos\theta_1, \quad y_1 = l_1 \sin\theta_1
+$$
+
+$$
+x_2 = l_1 \cos\theta_1 + l_2 \cos(\theta_1 + \theta_2)
+$$
+
+$$
+y_2 = l_1 \sin\theta_1 + l_2 \sin(\theta_1 + \theta_2)
+$$
 
 ---
 
-### 2.1 Forward Kinematics
-
-$x_1 = l_1 \cos\theta_1, \quad y_1 = l_1 \sin\theta_1$
-
-$x_2 = l_1 \cos\theta_1 + l_2 \cos(\theta_1 + \theta_2)$  
-$y_2 = l_1 \sin\theta_1 + l_2 \sin(\theta_1 + \theta_2)$
-
----
-
-### 2.2 Dynamics
+### 3.2 Dynamics
 
 $$
 M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a
@@ -66,9 +94,13 @@ $$
 
 ### Coriolis Matrix
 
+First define the auxiliary scalar:
+
 $$
 h = -m_2 l_1 l_2 \sin\theta_2
 $$
+
+Then:
 
 $$
 C(\theta,\dot{\theta}) =
@@ -92,25 +124,36 @@ $$
 
 ---
 
-## 3. Control Design
+## 4. Control Design
 
-### 3.1 Lyapunov Controller
+---
 
-Error definition:
+### 4.1 Error Definition
+
+First define the tracking error:
 
 $$
 e = \theta - \theta_d
 $$
 
-Control law:
+---
+
+### 4.2 Control Law
 
 $$
 a = -k_1 e - k_2 \dot{\theta} + G(\theta)
 $$
 
+**Interpretation:**
+- $-k_1 e$ — proportional restoring term (acts like a spring)  
+- $-k_2 \dot{\theta}$ — damping term (removes energy)  
+- $G(\theta)$ — gravity compensation  
+
 ---
 
-### Closed-loop Dynamics
+### 4.3 Closed-loop Dynamics
+
+Substituting the control law into the dynamics:
 
 $$
 M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0
@@ -118,39 +161,108 @@ $$
 
 ---
 
-### Lyapunov Function
+## 5. Lyapunov Stability Analysis (Detailed)
+
+---
+
+### 5.1 Choice of Lyapunov Function
+
+Consider the candidate:
 
 $$
 L = \frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta} + \frac{1}{2}k_1 e^T e
 $$
 
----
-
-### Time Derivative
-
-$$
-\dot{L} = -k_2 \|\dot{\theta}\|^2 \le 0
-$$
+**Justification:**
+- First term represents kinetic energy  
+- Second term penalizes position error  
+- Both terms are positive definite  
 
 ---
 
-### Stability Result
+### 5.2 Time Derivative
+
+Differentiate:
 
 $$
-e(t) \to 0, \quad \dot{\theta}(t) \to 0 \quad \text{as } t \to \infty
-$$
-
----
-
-### 3.2 PID Controller
-
-$$
-a_{\text{PID}} = K_P e + K_I \int_0^t e(\sigma)d\sigma + K_D \dot{e}
+\dot{L} =
+\frac{1}{2}\dot{\theta}^T \dot{M} \dot{\theta}
++ \dot{\theta}^T M \ddot{\theta}
++ k_1 e^T \dot{\theta}
 $$
 
 ---
 
-## 4. Simulation Parameters
+### 5.3 Key Identity
+
+From robot dynamics:
+
+$$
+\dot{\theta}^T \dot{M} \dot{\theta} = 2 \dot{\theta}^T C \dot{\theta}
+$$
+
+Thus:
+
+$$
+\dot{L} =
+\dot{\theta}^T C \dot{\theta}
++ \dot{\theta}^T M \ddot{\theta}
++ k_1 e^T \dot{\theta}
+$$
+
+---
+
+### 5.4 Substitution of Dynamics
+
+Using closed-loop system:
+
+$$
+M\ddot{\theta} + C\dot{\theta} = -k_1 e - k_2 \dot{\theta}
+$$
+
+Substitute:
+
+$$
+\dot{L} =
+\dot{\theta}^T (-k_1 e - k_2 \dot{\theta})
++ k_1 e^T \dot{\theta}
+$$
+
+---
+
+### 5.5 Simplification
+
+$$
+\dot{L} =
+- k_1 \dot{\theta}^T e
+- k_2 \dot{\theta}^T \dot{\theta}
++ k_1 e^T \dot{\theta}
+$$
+
+Since:
+
+$$
+\dot{\theta}^T e = e^T \dot{\theta}
+$$
+
+They cancel:
+
+$$
+\dot{L} = -k_2 \|\dot{\theta}\|^2
+$$
+
+---
+
+### 5.6 Final Result
+
+$$
+\dot{L} \le 0
+$$
+
+
+The system is **stable**.
+
+## 6. Simulation Parameters
 
 | Parameter | Value |
 |----------|------|
@@ -165,47 +277,33 @@ $$
 
 ---
 
-## 5. Results
+## 7. Results
 
-### 5.1 Lyapunov vs PID — Performance Comparison
-
-<p align="center">
-  <img src="figures/comparison_plots.png" alt="Comparison: Lyapunov vs PID" width="900"/>
-</p>
+### Lyapunov vs PID
 
 <p align="center">
-  <em>Figure 2: Comparison of Lyapunov-based and PID controllers — joint angles, tracking errors, and control torques</em>
+  <img src="figures/comparison_plots.png" width="900"/>
 </p>
 
 ---
 
-### 5.2 Lyapunov Function
+### Lyapunov Function
 
 <p align="center">
-  <img src="figures/lyapunov_function.png" alt="Lyapunov Function" width="700"/>
-</p>
-
-<p align="center">
-  <em>Figure 3: Evolution of the Lyapunov function $L(t)$ and its derivative</em>
+  <img src="figures/lyapunov_function.png" width="700"/>
 </p>
 
 ---
 
-### 5.3 Phase Portraits
+### Phase Portrait
 
 <p align="center">
-  <img src="figures/phase_portrait.png" alt="Phase Portraits" width="850"/>
+  <img src="figures/phase_portrait.png" width="850"/>
 </p>
-
-<p align="center">
-  <em>Figure 4: Phase portraits under the Lyapunov controller</em>
-</p>
-
---- 
 
 ---
 
-## 6. Project Structure
+## 8. Project Structure
 
 
 ```
@@ -234,7 +332,7 @@ project_1_lyapunov_control_two-linked_manipulator/
 
 ---
 
-## 7. How to Run
+## 9. How to Run
 
 ```bash
 pip install -r requirements.txt
@@ -242,6 +340,6 @@ python main.py
 ```
 ---
 
-## 8. References
+## 10. References
 
 1. Baccouch M., Dodds S. A two-link robot manipulator: Simulation and control design //International Journal of Robotic Engineering. – 2020. – V. 5. – №. 2. – P. 1-17.
