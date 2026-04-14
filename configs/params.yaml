@@ -1,0 +1,40 @@
+# ============================================================
+# Parameters for the two-link manipulator Lyapunov control project
+# ============================================================
+
+# Physical parameters of the robot (Baccouch & Dodds, 2020)
+robot:
+  m1: 1.0    # Mass of link 1 [kg]
+  m2: 2.0    # Mass of link 2 [kg]
+  l1: 1.0    # Length of link 1 [m]
+  l2: 1.0    # Length of link 2 [m]
+  g:  9.81   # Gravitational acceleration [m/s^2]
+
+# Simulation settings
+simulation:
+  t_start: 0.0
+  t_end:   10.0
+  dt:      0.01
+  # Initial state: [theta1, theta2, dtheta1, dtheta2]
+  initial_state: [3.14159265, 0.0, 0.0, 0.0]
+
+# Target configuration [theta1_d, theta2_d]
+control:
+  target_theta1: 1.5707963   # pi/2
+  target_theta2: 0.0
+
+# Lyapunov controller gains (PD + gravity compensation)
+# Control law: a = -k1 * (theta - theta_d) - k2 * dtheta + G(theta)
+lyapunov:
+  k1: 100.0
+  k2:  20.0
+
+# PID controller gains (baseline for comparison)
+# Independent PID per joint, no dynamic compensation
+pid:
+  kp1: 30.0
+  ki1: 20.0
+  kd1: 15.0
+  kp2: 30.0
+  ki2: 20.0
+  kd2: 10.0
