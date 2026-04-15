@@ -270,7 +270,7 @@ From the closed-loop dynamics (4): $M\ddot{\theta} + C\dot{\theta} = -k_1 e - k_
 The first and third terms cancel:
 
 ```math
-\boxed{\dot{L} = -k_2\|\dot{\theta}\|^2} \tag{6}
+{\dot{L} = -k_2\|\dot{\theta}\|^2} \tag{6}
 ```
 
 Since $k_2 > 0$, we have $\dot{L} \leq 0$ for all $(e, \dot{\theta})$, and $\dot{L} = 0$ only when $\dot{\theta} = 0$. Furthermore, if $\dot{\theta}(t) \equiv 0$, then $\ddot{\theta} \equiv 0$, and substituting into the closed-loop equation (4) gives $k_1 e = 0$, hence $e = 0$. By LaSalle's invariance principle, the equilibrium $(\theta, \dot{\theta}) = (\theta_d, 0)$ is **asymptotically stable**:
