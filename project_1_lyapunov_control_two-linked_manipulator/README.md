@@ -48,7 +48,7 @@ $x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T$
 |---|---|---|
 | $\theta_1, \theta_2$ | Joint angles (Link 1 relative to horizontal, Link 2 relative to Link 1) | rad |
 | $\dot{\theta}_1, \dot{\theta}_2$ | Joint angular velocities | rad/s |
-| $\ddot{\theta}_1, \ddot{\theta}_2$ | Joint angular accelerations | rad/s$^2$ |
+| $\ddot{\theta}_1, \ddot{\theta}_2$ | Joint angular accelerations | rad/s² |
 
 ### Control Input
 
@@ -66,7 +66,7 @@ $a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$
 | $m_2$ | Mass of Link 2 | 2.0 | kg |
 | $l_1$ | Length of Link 1 | 1.0 | m |
 | $l_2$ | Length of Link 2 | 1.0 | m |
-| $g$ | Gravitational acceleration | 9.81 | m/s$^2$ |
+| $g$ | Gravitational acceleration | 9.81 | m/s² |
 
 ---
 
