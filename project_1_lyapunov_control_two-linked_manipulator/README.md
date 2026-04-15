@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <em>Animation of the two-link manipulator stabilizing from an initial configuration (θ₁=π, θ2=0) to the target position (θ₍d₎=[π/2, 0]) using the Lyapunov-based controller.</em>
+  <em>Figure 0: Animation of the two-link manipulator stabilizing from an initial configuration (θ₁=π, θ2=0) to the target position (θ₍d₎=[π/2, 0]) using the Lyapunov-based controller.</em>
 </p>
 
 ---
@@ -33,7 +33,7 @@ The system consists of two rigid links connected by revolute joints rotating in 
 </p>
 
 <p align="center">
-  <em>Figure 1: Schematic of the two-link planar robot manipulator [1].</em>
+  <em>Figure 1: Schematic of the two-link planar robot manipulator.</em>
 </p>
 
 ### State Variables
@@ -79,7 +79,7 @@ a = [\tau_1, \tau_2]^T \in \mathbb{R}^2
 The dynamics are derived via Lagrangian mechanics [1] and take the standard form:
 
 ```math
-M(\theta) \ddot{\theta} + C(\theta,\dot{\theta}) \dot{\theta} + G(\theta) = a
+M(\theta) \ddot{\theta} + C(\theta,\dot{\theta}) \dot{\theta} + G(\theta) = a \tag{1}
 ```
 
 where:
@@ -126,12 +126,12 @@ is skew-symmetric. This means for any vector
 $x \in \mathbb{R}^2$:
 
 ```math
-x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0
+x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \tag{2}
 ```
 
 An equivalent and useful rewriting:
 ```math
-x^T \dot{M} x = 2  x^T C x
+x^T \dot{M} x = 2 x^T C x \tag{2'}
 ```
 
 #### Gravity Vector $G(\theta)$
@@ -165,7 +165,7 @@ a = -k_1 \theta - k_2 \dot{\theta} + G(\theta)
 This law drives the manipulator to the zero configuration $\theta = 0$. However, in practice we want to choose an arbitrary target position $\theta_d \neq 0$ for the end-effector. Replacing $\theta$ with the error $e = \theta − \theta_d$ generalizes this to an arbitrary target, giving the **PD controller with gravity compensation**:
 
 ```math
-a = -k_1 e - k_2 \dot{\theta} + G(\theta)
+a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3}
 ```
 
 where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
@@ -179,7 +179,7 @@ where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 Substituting (3) into (1):
 
 ```math
-M(\theta) \ddot{\theta} + C(\theta,\dot{\theta}) \dot{\theta} + k_2 \dot{\theta} + k_1 e = 0
+M(\theta) \ddot{\theta} + C(\theta,\dot{\theta}) \dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4}
 ```
 
 ### 4.3 Lyapunov Stability Analysis
@@ -191,7 +191,7 @@ To prove asymptotic stability, we use Lyapunov's direct method.
 Consider the energy-like function $L(e, \dot{\theta})$:
 
 ```math
-L(e, \dot{\theta}) = \underbrace{\frac{1}{2} \dot{\theta}^T M(\theta) \dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}}
+L(e, \dot{\theta}) = \underbrace{\frac{1}{2} \dot{\theta}^T M(\theta) \dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5}
 ```
 
 - The first term is the kinetic energy of the system. Since $M(\theta)$ is positive definite, it is strictly positive whenever $\dot{\theta} \neq 0$.
@@ -270,13 +270,13 @@ From the closed-loop dynamics (4): $M\ddot{\theta} + C\dot{\theta} = -k_1 e - k_
 The first and third terms cancel:
 
 ```math
-{\dot{L} = -k_2\|\dot{\theta}\|^2}
+\boxed{\dot{L} = -k_2\|\dot{\theta}\|^2} \tag{6}
 ```
 
 Since $k_2 > 0$, we have $\dot{L} \leq 0$ for all $(e, \dot{\theta})$, and $\dot{L} = 0$ only when $\dot{\theta} = 0$. Furthermore, if $\dot{\theta}(t) \equiv 0$, then $\ddot{\theta} \equiv 0$, and substituting into the closed-loop equation (4) gives $k_1 e = 0$, hence $e = 0$. By LaSalle's invariance principle, the equilibrium $(\theta, \dot{\theta}) = (\theta_d, 0)$ is **asymptotically stable**:
 
 ```math
-e(t) \to 0 \quad \text{and} \quad \dot{\theta}(t) \to 0 \quad \text{as} \quad t \to \infty
+e(t) \to 0 \quad \text{and} \quad \dot{\theta}(t) \to 0 \quad \text{as} \quad t \to \infty \tag{7}
 ```
 
 
