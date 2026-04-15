@@ -74,9 +74,7 @@ $a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$
 
 The dynamics are derived via Lagrangian mechanics [Baccouch & Dodds, 2020] and take the standard form:
 
-$$
-M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1}
-$$
+$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1}$
 
 where:
 
@@ -121,7 +119,7 @@ $\dot{M}(\theta) - 2C(\theta, \dot{\theta})$
 is skew-symmetric. This means for any vector 
 $x \in \mathbb{R}^2$:
 
-$$x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \tag{2}$$
+$x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \tag{2}$
 
 An equivalent and useful rewriting:
 $$x^T \dot{M} x = 2\, x^T C x \tag{2'}$$
@@ -154,9 +152,7 @@ $$
 
 This law drives the manipulator to the zero configuration $\theta = 0$. However, in practice we want to choose an arbitrary target position $\theta_d \neq 0$ for the end-effector. Replacing $\theta$ with the error $e = \theta − \theta_d$ generalizes this to an arbitrary target, giving the **PD controller with gravity compensation**:
 
-$$
-a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3} \\
-$$
+$a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3}$
 
 where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 
@@ -168,9 +164,7 @@ where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 
 Substituting (3) into (1):
 
-$$
-M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4} \\
-$$
+$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4}$
 
 ### 4.3 Lyapunov Stability Analysis
 
@@ -180,9 +174,7 @@ To prove asymptotic stability, we use Lyapunov's direct method.
 
 Consider the energy-like function \(L(e, $\dot{\theta}$)\):
 
-$$
-L(e, \dot{\theta}) = \underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5} \\
-$$
+$L(e, \dot{\theta}) = \underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5}$
 
 - The first term is the kinetic energy of the system. Since $M(\theta)$ is positive definite, it is strictly positive whenever $\dot{\theta} \neq 0$.
 
@@ -258,14 +250,10 @@ The control algorithm executed at each time step \(t\):
 2. **Compute Error:** $e = \theta_d - \theta(t)$.
 3. **Compute Dynamics Matrices:** Calculate $M(\theta)$, $C(\theta, \dot{\theta})$, and $G(\theta)$ using the current state.
 4. **Compute Control Input:**
-   $
-   a(t) = -k_1 e - k_2 \dot{\theta}(t) + G(\theta)
-   $
-5. **Apply Torque:** Apply \($a(t)$\) to the plant.
+$a(t) = -k_1 e - k_2 \dot{\theta}(t) + G(\theta)$
+5. **Apply Torque:** Apply \(a(t)\) to the plant.
 6. **Integrate Dynamics:** Solve
-   $
-   \ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)
-   $
+$\ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)$
    to update the state for \($t+\Delta t$\).
 
 ---
