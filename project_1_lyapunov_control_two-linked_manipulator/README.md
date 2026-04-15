@@ -174,7 +174,7 @@ where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 - $−k_2\dot{\theta}$: Derivative feedback — a damping force dissipating kinetic energy (analogous to a viscous damper).
 - $+G(\theta)$: Exact cancellation of gravitational torques.
 
-### 4.2 Closed-Loop Dynamics
+### 4.2 Dynamics
 
 Substituting (3) into (1):
 
@@ -449,9 +449,9 @@ To understand how the controller performance depends on the choice of gains $k_1
 
 ---
 
-## 9. Key Findings and Conclusions
+## 8. Key Findings and Conclusions
 
-#### 9.1 Lyapunov-Based Control Effectiveness
+#### 8.1 Lyapunov-Based Control Effectiveness
 
 The Lyapunov-based PD controller with gravity compensation demonstrates **superior performance** compared to classical PID control:
 - Settles **2.5× faster** (2 s vs. 5 s)
@@ -461,7 +461,7 @@ The Lyapunov-based PD controller with gravity compensation demonstrates **superi
 
 The theoretical Lyapunov stability guarantee is **fully validated** by the monotonic decay of the Lyapunov function throughout the simulation.
 
-#### 9.2 Optimal Gain Selection
+#### 8.2 Optimal Gain Selection
 
 The **current choice of $k_1=100, k_2=20$** represents an optimal balance:
 - **Settling Time:** ~2.3 seconds (fast but not excessive)
@@ -473,7 +473,7 @@ The **current choice of $k_1=100, k_2=20$** represents an optimal balance:
 - **Fast Response Required** → Consider $k_1=150, k_2=30$ (settling time → 1.5 s)
 - **Energy Efficiency Critical** → Consider $k_1=30, k_2=8$ (energy → 2,100 N·m·s)
 
-#### 9.3 Saturaton and Failure Modes
+#### 8.3 Saturaton and Failure Modes
 
 The sensitivity analysis reveals a **critical gain threshold** beyond which actuator saturation becomes problematic:
 - $k_1 > 180$ → Torque demands exceed most industrial servo limits
@@ -481,7 +481,7 @@ The sensitivity analysis reveals a **critical gain threshold** beyond which actu
 
 The current controller **operates safely at 60% of this threshold**, providing a comfortable safety margin.
 
-#### 9.4 Practical Implications
+#### 8.4 Practical Implications
 
 For a real robotic system:
 1. **Model Correctness:** Effectiveness of Lyapunov control depends critically on accurate dynamic parameter identification ($m_i$, $l_i$, friction coefficients, etc.).
@@ -491,7 +491,7 @@ For a real robotic system:
 
 ---
 
-## 10. Project Structure
+## 9. Project Structure
 
 ```text
 project_1_lyapunov_control_two-linked_manipulator/
@@ -523,7 +523,7 @@ project_1_lyapunov_control_two-linked_manipulator/
 
 ---
 
-## 11. How to Run
+## 10. How to Run
 
 ### Full Simulation and Comparison
 
@@ -546,6 +546,6 @@ This generates heatmaps and contour plots showing how settling time, maximum err
 
 ---
 
-## 12. References
+## 11. References
 
 1. Baccouch, M., & Dodds, S. (2020). *A two-link robot manipulator: Simulation and control design*. International Journal of Robotic Engineering, 5(2), 1–17.
