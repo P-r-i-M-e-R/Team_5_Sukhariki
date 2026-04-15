@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <em>Figure 0: Animation of the two-link manipulator stabilizing from an initial configuration (θ1=π, θ2=0) to the target position (θd=[π/2, 0]) using the Lyapunov-based controller.</em>
+  <em>Figure 0: Animation of the two-link manipulator stabilizing from an initial configuration (θ₁=π, θ2=0) to the target position (θ₍d₎=[π/2, 0]) using the Lyapunov-based controller.</em>
 </p>
 
 ---
@@ -54,9 +54,7 @@ $x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T$
 
 The control input is the vector of applied joint torques:
 
-\[
 $a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$
-\]
 
 ### Dynamic Parameters
 
@@ -76,7 +74,9 @@ $a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$
 
 The dynamics are derived via Lagrangian mechanics [Baccouch & Dodds, 2020] and take the standard form:
 
-$$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1}$$
+$$
+M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1}
+$$
 
 where:
 
@@ -85,7 +85,7 @@ where:
 - $C(\theta,\dot{\theta}) \in \mathbb{R}^{2\times2}$ is the Coriolis and centrifugal matrix
 - $G(\theta) \in \mathbb{R}^2$ is the gravity vector
 
-#### Inertia Matrix \($M(\theta)$\)
+#### Inertia Matrix \(M($\theta$)\)
 
 $$
 M(\theta) =
@@ -121,16 +121,12 @@ $\dot{M}(\theta) - 2C(\theta, \dot{\theta})$
 is skew-symmetric. This means for any vector 
 $x \in \mathbb{R}^2$:
 
-$$
-x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \tag{2}
-$$
+$$x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \tag{2}$$
 
 An equivalent and useful rewriting:
-$$
-x^T \dot{M} x = 2\, x^T C x \tag{2'}
-$$
+$$x^T \dot{M} x = 2\, x^T C x \tag{2'}$$
 
-#### Gravity Vector \($G(\theta)$\)
+#### Gravity Vector \(G($\theta$)\)
 
 $$
 G(\theta) =
@@ -142,7 +138,7 @@ $$
 
 The gravity vector is the gradient of the gravitational potential energy U_g(θ) with respect to θ:
 
-$$G(\theta) = \frac{\partial U_g}{\partial \theta}, \qquad U_g = (m_1+m_2)\,g\,l_1\sin\theta_1 + m_2\,g\,l_2\sin(\theta_1+\theta_2)$$
+$$G(\theta) = \frac{\partial U_g}{\partial \theta}, \qquad U_{g} = (m_1+m_2)\,g\,l_1\sin\theta_1 + m_2\,g\,l_2\sin(\theta_1+\theta_2)$$
 
 ---
 
@@ -158,7 +154,9 @@ $$
 
 This law drives the manipulator to the zero configuration $\theta = 0$. However, in practice we want to choose an arbitrary target position $\theta_d \neq 0$ for the end-effector. Replacing $\theta$ with the error $e = \theta − \theta_d$ generalizes this to an arbitrary target, giving the **PD controller with gravity compensation**:
 
-$$a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3}$$
+$$
+a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3} \\
+$$
 
 where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 
@@ -171,7 +169,7 @@ where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 Substituting (3) into (1):
 
 $$
-M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4}
+M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4} \\
 $$
 
 ### 4.3 Lyapunov Stability Analysis
@@ -180,14 +178,10 @@ To prove asymptotic stability, we use Lyapunov's direct method.
 
 **Step 1: Lyapunov Function Candidate**
 
-Consider the energy-like function \($L(e, \dot{\theta})$\):
+Consider the energy-like function \(L(e, $\dot{\theta}$)\):
 
 $$
-L(e, \dot{\theta})
-=
-\underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}}_{\text{Kinetic Energy}}
-+
-\underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5}
+L(e, \dot{\theta}) = \underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5} \\
 $$
 
 - The first term is the kinetic energy of the system. Since $M(\theta)$ is positive definite, it is strictly positive whenever $\dot{\theta} \neq 0$.

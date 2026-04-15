@@ -2,6 +2,13 @@
 
 Repository for team projects in the Advanced Control Methods course at Skoltech (2026).
 
+## Authors
+1) Nikita Kuzmin
+2) Pavel Kuznetsov
+3) Georgii Demianchuk
+4) Sofya Konstantinova
+5) Filipp Maksimov
+
 ## Projects
 
 ### Project 1: Lyapunov-Based Control of a Two-Link Manipulator

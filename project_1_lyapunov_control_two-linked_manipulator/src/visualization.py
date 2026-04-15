@@ -279,13 +279,25 @@ def plot_k_sensitivity_comparison(results: dict, save_dir: str = "figures") -> N
     # Figure 3: Control torques comparison
     fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
     
+    # Plot "Very Large" (index 4) first with low zorder so others appear on top
+    if len(simulations) > 4:
+        times, states, torques, k1, k2, desc = simulations[4]
+        color = colors[4]
+        # Torque on joint 1
+        axes[0].plot(times, torques[:, 0], color=color, label=desc, linewidth=2, zorder=1)
+        # Torque on joint 2
+        axes[1].plot(times, torques[:, 1], color=color, linewidth=2, zorder=1)
+    
+    # Plot all others with higher zorder
     for idx, (times, states, torques, k1, k2, desc) in enumerate(simulations):
+        if idx == 4:  # Skip "Very Large" since we already plotted it
+            continue
         color = colors[idx]
         
         # Torque on joint 1
-        axes[0].plot(times, torques[:, 0], color=color, label=desc, linewidth=2)
+        axes[0].plot(times, torques[:, 0], color=color, label=desc, linewidth=2, zorder=2)
         # Torque on joint 2
-        axes[1].plot(times, torques[:, 1], color=color, linewidth=2)
+        axes[1].plot(times, torques[:, 1], color=color, linewidth=2, zorder=2)
     
     axes[0].set_ylabel(r"$\tau_1$ [N·m]", fontsize=11)
     axes[1].set_ylabel(r"$\tau_2$ [N·m]", fontsize=11)
