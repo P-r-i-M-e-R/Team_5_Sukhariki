@@ -11,6 +11,8 @@ from src.visualization import (
     plot_phase_portrait,
     create_animation,
 )
+from src.gain_analysis import analyze_k_sensitivity
+from src.visualization import plot_k_sensitivity_comparison
 
 
 def load_config(path: str = "configs/params.yaml") -> dict:
@@ -78,8 +80,6 @@ def main():
 
     # Gain sensitivity analysis
     print("Analyzing gain sensitivity with 5 k-value configurations ...")
-    from src.gain_analysis import analyze_k_sensitivity
-    from src.visualization import plot_k_sensitivity_comparison
     
     k_sensitivity = analyze_k_sensitivity(robot, x0, theta_d, t_span, dt)
     plot_k_sensitivity_comparison(k_sensitivity)
