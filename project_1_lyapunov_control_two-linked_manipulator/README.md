@@ -41,7 +41,7 @@ The system consists of two rigid links connected by revolute joints rotating in 
 The state vector $x \in \mathbb{R}^4$ is defined as:
 
 
-$x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T$
+$$x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T$$
 
 
 | Symbol | Meaning | Units |
@@ -54,7 +54,7 @@ $x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T$
 
 The control input is the vector of applied joint torques:
 
-$a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$
+$$a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$$
 
 ### Dynamic Parameters
 
@@ -74,7 +74,7 @@ $a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$
 
 The dynamics are derived via Lagrangian mechanics [Baccouch & Dodds, 2020] and take the standard form:
 
-$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1}$
+$$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1}$$
 
 where:
 
@@ -83,7 +83,7 @@ where:
 - $C(\theta,\dot{\theta}) \in \mathbb{R}^{2\times2}$ is the Coriolis and centrifugal matrix
 - $G(\theta) \in \mathbb{R}^2$ is the gravity vector
 
-#### Inertia Matrix \(M($\theta$)\)
+#### Inertia Matrix $M(\theta)$
 
 $$
 M(\theta) =
@@ -102,7 +102,7 @@ $$
 
 The matrix $M(\theta)$ is symmetric ($M_{21} = M_{12}$) and positive definite for all $\theta$, which means it is always invertible.
 
-#### Coriolis Matrix \(C($\theta, \dot{\theta}$)\)
+#### Coriolis Matrix $C(\theta, \dot{\theta})$
 
 Using the auxiliary term $h = -m_2 l_1 l_2 \sin\theta_2$:
 
@@ -119,12 +119,12 @@ $\dot{M}(\theta) - 2C(\theta, \dot{\theta})$
 is skew-symmetric. This means for any vector 
 $x \in \mathbb{R}^2$:
 
-$x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \tag{2}$
+$$x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \tag{2}$$
 
 An equivalent and useful rewriting:
 $$x^T \dot{M} x = 2\, x^T C x \tag{2'}$$
 
-#### Gravity Vector \(G($\theta$)\)
+#### Gravity Vector $G(\theta)$
 
 $$
 G(\theta) =
@@ -152,7 +152,7 @@ $$
 
 This law drives the manipulator to the zero configuration $\theta = 0$. However, in practice we want to choose an arbitrary target position $\theta_d \neq 0$ for the end-effector. Replacing $\theta$ with the error $e = \theta − \theta_d$ generalizes this to an arbitrary target, giving the **PD controller with gravity compensation**:
 
-$a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3}$
+$$a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3}$$
 
 where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 
@@ -164,7 +164,7 @@ where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 
 Substituting (3) into (1):
 
-$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4}$
+$$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4}$$
 
 ### 4.3 Lyapunov Stability Analysis
 
@@ -172,9 +172,9 @@ To prove asymptotic stability, we use Lyapunov's direct method.
 
 **Step 1: Lyapunov Function Candidate**
 
-Consider the energy-like function \(L(e, $\dot{\theta}$)\):
+Consider the energy-like function $L(e, \dot{\theta})$:
 
-$L(e, \dot{\theta}) = \underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5}$
+$$L(e, \dot{\theta}) = \underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5}$$
 
 - The first term is the kinetic energy of the system. Since $M(\theta)$ is positive definite, it is strictly positive whenever $\dot{\theta} \neq 0$.
 
@@ -182,7 +182,7 @@ $L(e, \dot{\theta}) = \underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta
 
 Therefore, $L(e, \dot{\theta}) > 0$ for all $(e, \dot{\theta}) \neq (0,0)$, and $L(0,0) = 0$. Thus, $L$ is **positive definite**.
 
-**Step 2: Time Derivative of \($L$\)**
+**Step 2: Time Derivative of $L$**
 
 **Given:**
 
@@ -231,7 +231,7 @@ $$\dot{L} = -k_1\underbrace{\dot{\theta}^T e}_{=\, e^T\dot{\theta}} - k_2\dot{\t
 
 The first and third terms cancel:
 
-$$\boxed{\dot{L} = -k_2\|\dot{\theta}\|^2}$$
+$${\dot{L} = -k_2\|\dot{\theta}\|^2}$$
 
 Since $k_2 > 0$, we have $\dot{L} \leq 0$ for all $(e, \dot{\theta})$, and $\dot{L} = 0$ only when $\dot{\theta} = 0$. Furthermore, if $\dot{\theta}(t) \equiv 0$, then $\ddot{\theta} \equiv 0$, and substituting into the closed-loop equation (4) gives $k_1\,e = 0$, hence $e = 0$. By LaSalle's invariance principle, the equilibrium $(\theta, \dot{\theta}) = (\theta_d, 0)$ is **asymptotically stable**:
 
@@ -244,17 +244,21 @@ $$
 
 ## 5. Algorithm Listing
 
-The control algorithm executed at each time step \(t\):
+The control algorithm executed at each time step $t$:
 
 1. **Read State:** Obtain current $\theta(t)$ and $\dot{\theta}(t)$.
 2. **Compute Error:** $e = \theta_d - \theta(t)$.
 3. **Compute Dynamics Matrices:** Calculate $M(\theta)$, $C(\theta, \dot{\theta})$, and $G(\theta)$ using the current state.
 4. **Compute Control Input:**
-$a(t) = -k_1 e - k_2 \dot{\theta}(t) + G(\theta)$
-5. **Apply Torque:** Apply \(a(t)\) to the plant.
+
+$$a(t) = -k_1 e - k_2 \dot{\theta}(t) + G(\theta)$$
+
+5. **Apply Torque:** Apply $a(t)$ to the plant.
 6. **Integrate Dynamics:** Solve
-$\ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)$
-   to update the state for \($t+\Delta t$\).
+
+$$\ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)$$
+
+   to update the state for $t+\Delta t$.
 
 ---
 
@@ -321,7 +325,7 @@ $\ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)$
 
 ### 7.4 Gain Sensitivity Analysis
 
-To understand how the controller performance depends on the choice of gains \($k_1$\) and \($k_2$\), a sensitivity analysis was performed with five representative configurations:
+To understand how the controller performance depends on the choice of gains $k_1$ and $k_2$, a sensitivity analysis was performed with five representative configurations:
 
 | Configuration | $k_1$ | $k_2$ | Interpretation |
 |---|---:|---:|---|
