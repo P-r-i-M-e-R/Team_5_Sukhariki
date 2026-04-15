@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <em>Figure 0: Animation of the two-link manipulator stabilizing from an initial configuration (θ₁=π, θ2=0) to the target position (θ₍d₎=[π/2, 0]) using the Lyapunov-based controller.</em>
+  <em>Animation of the two-link manipulator stabilizing from an initial configuration (θ₁=π, θ2=0) to the target position (θ₍d₎=[π/2, 0]) using the Lyapunov-based controller.</em>
 </p>
 
 ---
