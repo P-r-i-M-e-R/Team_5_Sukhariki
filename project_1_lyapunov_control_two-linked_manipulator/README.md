@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <em>Figure 0: Animation of the two-link manipulator stabilizing from an initial configuration (θ₁=π, θ2=0) to the target position (θ₍d₎=[π/2, 0]) using the Lyapunov-based controller.</em>
+  <em>Animation of the two-link manipulator stabilizing from an initial configuration (θ₁=π, θ2=0) to the target position (θ₍d₎=[π/2, 0]) using the Lyapunov-based controller.</em>
 </p>
 
 ---
@@ -33,7 +33,7 @@ The system consists of two rigid links connected by revolute joints rotating in 
 </p>
 
 <p align="center">
-  <em>Figure 1: Schematic of the two-link planar robot manipulator.</em>
+  <em>Figure 1: Schematic of the two-link planar robot manipulator [1].</em>
 </p>
 
 ### State Variables
@@ -41,7 +41,9 @@ The system consists of two rigid links connected by revolute joints rotating in 
 The state vector $x \in \mathbb{R}^4$ is defined as:
 
 
-$$x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T$$
+```math
+x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T
+```
 
 
 | Symbol | Meaning | Units |
@@ -54,7 +56,9 @@ $$x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T$$
 
 The control input is the vector of applied joint torques:
 
-$$a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$$
+```math
+a = [\tau_1, \tau_2]^T \in \mathbb{R}^2
+```
 
 ### Dynamic Parameters
 
@@ -72,9 +76,11 @@ $$a = [\tau_1, \tau_2]^T \in \mathbb{R}^2$$
 
 ### Equations of Motion
 
-The dynamics are derived via Lagrangian mechanics [Baccouch & Dodds, 2020] and take the standard form:
+The dynamics are derived via Lagrangian mechanics [1] and take the standard form:
 
-$$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + G(\theta) = a \tag{1}$$
+```math
+M(\theta) \ddot{\theta} + C(\theta,\dot{\theta}) \dot{\theta} + G(\theta) = a
+```
 
 where:
 
@@ -85,20 +91,20 @@ where:
 
 #### Inertia Matrix $M(\theta)$
 
-$$
+```math
 M(\theta) =
 \begin{bmatrix}
 M_{11} & M_{12} \\
 M_{12} & M_{22}
 \end{bmatrix}
-$$
-$$
+```
+```math
 \begin{aligned}
 M_{11} &= (m_1 + m_2)l_1^2 + m_2 l_2^2 + 2 m_2 l_1 l_2 \cos\theta_2 \\
 M_{12} &= m_2 l_2^2 + m_2 l_1 l_2 \cos\theta_2 \\
 M_{22} &= m_2 l_2^2
 \end{aligned}
-$$
+```
 
 The matrix $M(\theta)$ is symmetric ($M_{21} = M_{12}$) and positive definite for all $\theta$, which means it is always invertible.
 
@@ -106,37 +112,43 @@ The matrix $M(\theta)$ is symmetric ($M_{21} = M_{12}$) and positive definite fo
 
 Using the auxiliary term $h = -m_2 l_1 l_2 \sin\theta_2$:
 
-$$
+```math
 C(\theta,\dot{\theta}) =
 \begin{bmatrix}
 h\dot{\theta}_2 & h(\dot{\theta}_1 + \dot{\theta}_2) \\
 -h\dot{\theta}_1 & 0
 \end{bmatrix}
-$$
+```
 
 This particular form of $C$ is constructed using Christoffel symbols so that 
 $\dot{M}(\theta) - 2C(\theta, \dot{\theta})$ 
 is skew-symmetric. This means for any vector 
 $x \in \mathbb{R}^2$:
 
-$$x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \tag{2}$$
+```math
+x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0
+```
 
 An equivalent and useful rewriting:
-$$x^T \dot{M} x = 2\, x^T C x \tag{2'}$$
+```math
+x^T \dot{M} x = 2  x^T C x
+```
 
 #### Gravity Vector $G(\theta)$
 
-$$
+```math
 G(\theta) =
 \begin{bmatrix}
 (m_1 + m_2)g l_1 \cos\theta_1 + m_2 g l_2 \cos(\theta_1 + \theta_2) \\
 m_2 g l_2 \cos(\theta_1 + \theta_2)
 \end{bmatrix}
-$$
+```
 
-The gravity vector is the gradient of the gravitational potential energy U_g(θ) with respect to θ:
+The gravity vector is the gradient of the gravitational potential energy $U_g(\theta)$ with respect to $\theta$:
 
-$$G(\theta) = \frac{\partial U_g}{\partial \theta}, \qquad U_{g} = (m_1+m_2)\,g\,l_1\sin\theta_1 + m_2\,g\,l_2\sin(\theta_1+\theta_2)$$
+```math
+G(\theta) = \frac{\partial U_g}{\partial \theta}, \qquad U_{g} = (m_1+m_2) g l_1\sin\theta_1 + m_2 g l_2\sin(\theta_1+\theta_2)
+```
 
 ---
 
@@ -146,17 +158,19 @@ $$G(\theta) = \frac{\partial U_g}{\partial \theta}, \qquad U_{g} = (m_1+m_2)\,g\
 
 We begin with the simplest case: stabilization at the origin $\theta = 0$:
 
-$$
-a = -k_1\,\theta - k_2\,\dot{\theta} + G(\theta)
-$$
+```math
+a = -k_1 \theta - k_2 \dot{\theta} + G(\theta)
+```
 
 This law drives the manipulator to the zero configuration $\theta = 0$. However, in practice we want to choose an arbitrary target position $\theta_d \neq 0$ for the end-effector. Replacing $\theta$ with the error $e = \theta − \theta_d$ generalizes this to an arbitrary target, giving the **PD controller with gravity compensation**:
 
-$$a = -k_1 e - k_2 \dot{\theta} + G(\theta) \tag{3}$$
+```math
+a = -k_1 e - k_2 \dot{\theta} + G(\theta)
+```
 
 where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 
-- $−k_1e$: Proportional feedback — a restoring force pulling the system toward θ_d (analogous to a spring).
+- $−k_1e$: Proportional feedback — a restoring force pulling the system toward $\theta_d$ (analogous to a spring).
 - $−k_2\dot{\theta}$: Derivative feedback — a damping force dissipating kinetic energy (analogous to a viscous damper).
 - $+G(\theta)$: Exact cancellation of gravitational torques.
 
@@ -164,7 +178,9 @@ where $k_1 > 0$ and $k_2 > 0$ are scalar gain coefficients.
 
 Substituting (3) into (1):
 
-$$M(\theta)\ddot{\theta} + C(\theta,\dot{\theta})\dot{\theta} + k_2 \dot{\theta} + k_1 e = 0 \tag{4}$$
+```math
+M(\theta) \ddot{\theta} + C(\theta,\dot{\theta}) \dot{\theta} + k_2 \dot{\theta} + k_1 e = 0
+```
 
 ### 4.3 Lyapunov Stability Analysis
 
@@ -174,7 +190,9 @@ To prove asymptotic stability, we use Lyapunov's direct method.
 
 Consider the energy-like function $L(e, \dot{\theta})$:
 
-$$L(e, \dot{\theta}) = \underbrace{\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \tag{5}$$
+```math
+L(e, \dot{\theta}) = \underbrace{\frac{1}{2} \dot{\theta}^T M(\theta) \dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}}
+```
 
 - The first term is the kinetic energy of the system. Since $M(\theta)$ is positive definite, it is strictly positive whenever $\dot{\theta} \neq 0$.
 
@@ -186,7 +204,9 @@ Therefore, $L(e, \dot{\theta}) > 0$ for all $(e, \dot{\theta}) \neq (0,0)$, and 
 
 **Given:**
 
-$$L(e, \dot{\theta}) = \frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta} + \frac{1}{2}k_1 e^T e$$
+```math
+L(e, \dot{\theta}) = \frac{1}{2} \dot{\theta}^T M(\theta) \dot{\theta} + \frac{1}{2}k_1 e^T e
+```
 
 Differentiate each term with respect to time.
 
@@ -195,49 +215,69 @@ Differentiate each term with respect to time.
 
 Apply the product rule for three factors:
 
-$$\frac{d}{dt}\left(\frac{1}{2}\dot{\theta}^T M \dot{\theta}\right) = \frac{1}{2}\ddot{\theta}^T M \dot{\theta} + \frac{1}{2}\dot{\theta}^T \dot{M} \dot{\theta} + \frac{1}{2}\dot{\theta}^T M \ddot{\theta}$$
+```math
+\frac{d}{dt}\left(\frac{1}{2} \dot{\theta}^T M \dot{\theta}\right) = \frac{1}{2} \ddot{\theta}^T M \dot{\theta} + \frac{1}{2} \dot{\theta}^T \dot{M} \dot{\theta} + \frac{1}{2} \dot{\theta}^T M \ddot{\theta}
+```
 
 Since $M$ is symmetric, $\ddot{\theta}^T M \dot{\theta} = \dot{\theta}^T M \ddot{\theta}$, therefore the first and third terms combine:
 
-$$= \dot{\theta}^T M \ddot{\theta} + \frac{1}{2}\dot{\theta}^T \dot{M} \dot{\theta}$$
+```math
+= \dot{\theta}^T M \ddot{\theta} + \frac{1}{2} \dot{\theta}^T \dot{M} \dot{\theta}
+```
 
 
 **Term 2:** $\frac{1}{2}k_1 e^T e$
 
-$$\frac{d}{dt}\left(\frac{1}{2}k_1 e^T e\right) = k_1 e^T \dot{e}$$
+```math
+\frac{d}{dt}\left(\frac{1}{2}k_1 e^T e\right) = k_1 e^T \dot{e}
+```
 
 Since $\theta_d$ is constant, $\dot{e} = \dot{\theta}$, therefore:
 
-$$= k_1 e^T \dot{\theta}$$
+```math
+= k_1 e^T \dot{\theta}
+```
 
 
 **Total:**
 
-$$\dot{L} = \dot{\theta}^T M \ddot{\theta} + \frac{1}{2}\dot{\theta}^T \dot{M} \dot{\theta} + k_1 e^T \dot{\theta}$$
+```math
+\dot{L} = \dot{\theta}^T M \ddot{\theta} + \frac{1}{2} \dot{\theta}^T \dot{M} \dot{\theta} + k_1 e^T \dot{\theta}
+```
 
 Use the skew-symmetry property of $(\dot{M} - 2C)$: for any vector $x$, $x^T(\dot{M} - 2C)x = 0$, which implies $\frac{1}{2}x^T \dot{M} x = x^T C x$. Substituting $x = \dot{\theta}$:
 
-$$\frac{1}{2}\dot{\theta}^T \dot{M} \dot{\theta} = \dot{\theta}^T C \dot{\theta}$$
+```math
+\frac{1}{2} \dot{\theta}^T \dot{M} \dot{\theta} = \dot{\theta}^T C \dot{\theta}
+```
 
 We obtain:
 
-$$\dot{L} = \dot{\theta}^T M \ddot{\theta} + \dot{\theta}^T C \dot{\theta} + k_1 e^T \dot{\theta} = \dot{\theta}^T\underbrace{(M\ddot{\theta} + C\dot{\theta})}_{\text{from (4)}} + k_1 e^T \dot{\theta}$$
+```math
+\dot{L} = \dot{\theta}^T M \ddot{\theta} + \dot{\theta}^T C \dot{\theta} + k_1 e^T \dot{\theta} = \dot{\theta}^T\underbrace{(M\ddot{\theta} + C\dot{\theta})}_{\text{from (4)}} + k_1 e^T \dot{\theta}
+```
 
 From the closed-loop dynamics (4): $M\ddot{\theta} + C\dot{\theta} = -k_1 e - k_2\dot{\theta}$. Substitute:
 
-$$\dot{L} = \dot{\theta}^T(-k_1 e - k_2 \dot{\theta}) + k_1 e^T \dot{\theta}$$
+```math
+\dot{L} = \dot{\theta}^T(-k_1 e - k_2 \dot{\theta}) + k_1 e^T \dot{\theta}
+```
 
-$$\dot{L} = -k_1\underbrace{\dot{\theta}^T e}_{=\, e^T\dot{\theta}} - k_2\dot{\theta}^T\dot{\theta} + k_1 e^T\dot{\theta}$$
+```math
+\dot{L} = -k_1\underbrace{\dot{\theta}^T e}_{=  e^T\dot{\theta}} - k_2\dot{\theta}^T\dot{\theta} + k_1 e^T\dot{\theta}
+```
 
 The first and third terms cancel:
 
-$${\dot{L} = -k_2\|\dot{\theta}\|^2}$$
+```math
+{\dot{L} = -k_2\|\dot{\theta}\|^2}
+```
 
-Since $k_2 > 0$, we have $\dot{L} \leq 0$ for all $(e, \dot{\theta})$, and $\dot{L} = 0$ only when $\dot{\theta} = 0$. Furthermore, if $\dot{\theta}(t) \equiv 0$, then $\ddot{\theta} \equiv 0$, and substituting into the closed-loop equation (4) gives $k_1\,e = 0$, hence $e = 0$. By LaSalle's invariance principle, the equilibrium $(\theta, \dot{\theta}) = (\theta_d, 0)$ is **asymptotically stable**:
+Since $k_2 > 0$, we have $\dot{L} \leq 0$ for all $(e, \dot{\theta})$, and $\dot{L} = 0$ only when $\dot{\theta} = 0$. Furthermore, if $\dot{\theta}(t) \equiv 0$, then $\ddot{\theta} \equiv 0$, and substituting into the closed-loop equation (4) gives $k_1 e = 0$, hence $e = 0$. By LaSalle's invariance principle, the equilibrium $(\theta, \dot{\theta}) = (\theta_d, 0)$ is **asymptotically stable**:
 
-$$
+```math
 e(t) \to 0 \quad \text{and} \quad \dot{\theta}(t) \to 0 \quad \text{as} \quad t \to \infty
-$$
+```
 
 
 ---
@@ -251,12 +291,16 @@ The control algorithm executed at each time step $t$:
 3. **Compute Dynamics Matrices:** Calculate $M(\theta)$, $C(\theta, \dot{\theta})$, and $G(\theta)$ using the current state.
 4. **Compute Control Input:**
 
-$$a(t) = -k_1 e - k_2 \dot{\theta}(t) + G(\theta)$$
+```math
+a(t) = -k_1 e - k_2 \dot{\theta}(t) + G(\theta)
+```
 
 5. **Apply Torque:** Apply $a(t)$ to the plant.
 6. **Integrate Dynamics:** Solve
 
-$$\ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)$$
+```math
+\ddot{\theta} = M^{-1}(a - C\dot{\theta} - G)
+```
 
    to update the state for $t+\Delta t$.
 
@@ -410,10 +454,10 @@ To understand how the controller performance depends on the choice of gains $k_1
 #### 9.1 Lyapunov-Based Control Effectiveness
 
 The Lyapunov-based PD controller with gravity compensation demonstrates **superior performance** compared to classical PID control:
-- [OK] Settles **2.5× faster** (2 s vs. 5 s)
-- [OK] Final error is **10,000× smaller** (0.15 mm vs. 1.6 rad)
-- [OK] Requires **12× less peak torque** (206 N·m vs. 2404 N·m)
-- [OK] Smooth, predictable transient response with no oscillations
+- Settles **2.5× faster** (2 s vs. 5 s)
+- Final error is **10,000× smaller** (0.15 mm vs. 1.6 rad)
+- Requires **12× less peak torque** (206 N·m vs. 2404 N·m)
+- Smooth, predictable transient response with no oscillations
 
 The theoretical Lyapunov stability guarantee is **fully validated** by the monotonic decay of the Lyapunov function throughout the simulation.
 
