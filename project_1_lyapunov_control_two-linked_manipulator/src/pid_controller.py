@@ -5,11 +5,10 @@ class PIDController:
 
     def __init__(self, kp: np.ndarray, ki: np.ndarray, kd: np.ndarray):
         """
-        Parameters
-        ----------
-        kp, ki, kd : array-like of shape (2,)
-            Gains for joint 1 and joint 2.
+        Parameters:
+        kp, ki, kd: array-like of shape (2,) - gains for joint 1 and joint 2.
         """
+
         self.kp = np.asarray(kp, dtype=float)
         self.ki = np.asarray(ki, dtype=float)
         self.kd = np.asarray(kd, dtype=float)
@@ -18,23 +17,23 @@ class PIDController:
         self.prev_error = np.zeros(2)
 
     def reset(self):
-        """Clear integrator and derivative memory."""
+        """Clear integrator and derivative memory"""
+
         self.integral_error = np.zeros(2)
         self.prev_error = np.zeros(2)
 
     def compute_control(self, state: np.ndarray, theta_d: np.ndarray, dt: float) -> np.ndarray:
         """Compute PID torques.
 
-        Parameters
-        ----------
-        state   : [theta1, theta2, dtheta1, dtheta2]
-        theta_d : [theta1_d, theta2_d]
-        dt      : time step for numerical derivative and integration
+        Parameters:
+        state: [theta1, theta2, dtheta1, dtheta2]
+        theta_d: [theta1_d, theta2_d]
+        dt: time step for numerical derivative and integration
 
-        Returns
-        -------
-        a : [tau1, tau2]
+        Returns:
+        a: [tau1, tau2]
         """
+        
         theta = state[:2]
         error = theta_d - theta   
 

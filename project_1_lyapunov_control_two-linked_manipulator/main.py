@@ -21,13 +21,13 @@ def load_config(path: str = "configs/params.yaml") -> dict:
 def main():
     cfg = load_config()
 
-    # --- plant ---
+    # Plant
     rp = cfg["robot"]
     robot = TwoLinkManipulator(
         m1=rp["m1"], m2=rp["m2"], l1=rp["l1"], l2=rp["l2"], g=rp["g"],
     )
 
-    # --- simulation settings ---
+    # Simulation settings
     sim = cfg["simulation"]
     t_span = (sim["t_start"], sim["t_end"])
     dt = sim["dt"]
@@ -36,7 +36,7 @@ def main():
     ctrl = cfg["control"]
     theta_d = np.array([ctrl["target_theta1"], ctrl["target_theta2"]])
 
-    # --- controllers ---
+    # Controllers
     lp = cfg["lyapunov"]
     lyap_ctrl = LyapunovController(robot, k1=lp["k1"], k2=lp["k2"])
 
@@ -47,7 +47,7 @@ def main():
         kd=[pp["kd1"], pp["kd2"]],
     )
 
-    # --- run simulations ---
+    # Run simulations
     print("Running Lyapunov (PD + gravity comp.) simulation ...")
     t_lyap, states_lyap, torques_lyap = run_simulation(
         robot, lyap_ctrl, x0, theta_d, t_span, dt, is_pid=False,
@@ -58,14 +58,14 @@ def main():
         robot, pid_ctrl, x0, theta_d, t_span, dt, is_pid=True,
     )
 
-    # --- compute Lyapunov function values ---
+    # Compute Lyapunov function values
     n = len(t_lyap)
     L_vals = np.zeros(n)
     dL_vals = np.zeros(n)
     for i in range(n):
         L_vals[i], dL_vals[i] = lyap_ctrl.compute_lyapunov(states_lyap[i], theta_d)
 
-    # --- generate outputs ---
+    # Generate outputs
     print("Generating plots ...")
     plot_comparison(
         t_lyap, states_lyap, torques_lyap, states_pid, torques_pid, theta_d,
@@ -76,7 +76,15 @@ def main():
     print("Creating animation ...")
     create_animation(t_lyap, states_lyap, rp["l1"], rp["l2"], theta_d)
 
-    # --- summary ---
+    # Gain sensitivity analysis
+    print("Analyzing gain sensitivity with 5 k-value configurations ...")
+    from src.gain_analysis import analyze_k_sensitivity
+    from src.visualization import plot_k_sensitivity_comparison
+    
+    k_sensitivity = analyze_k_sensitivity(robot, x0, theta_d, t_span, dt)
+    plot_k_sensitivity_comparison(k_sensitivity)
+
+    # Summary
     final_err_lyap = np.linalg.norm(states_lyap[-1, :2] - theta_d)
     final_err_pid = np.linalg.norm(states_pid[-1, :2] - theta_d)
     print("\n===== Results Summary =====")

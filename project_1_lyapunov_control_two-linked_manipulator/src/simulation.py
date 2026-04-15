@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.integrate import solve_ivp
-from src.system import TwoLinkManipulator
+from .system import TwoLinkManipulator
 
 
 def run_simulation(
@@ -14,22 +14,21 @@ def run_simulation(
 ):
     """Simulate the closed-loop system.
 
-    Parameters
-    ----------
-    robot         : TwoLinkManipulator plant
-    controller    : LyapunovController or PIDController
-    initial_state : [theta1, theta2, dtheta1, dtheta2]
-    theta_d       : [theta1_d, theta2_d]
-    t_span        : (t_start, t_end)
-    dt            : fixed output time step
-    is_pid        : if True, pass dt to controller.compute_control
+    Parameters:
+    robot: TwoLinkManipulator plant
+    controller: LyapunovController or PIDController
+    initial_state: [theta1, theta2, dtheta1, dtheta2]
+    theta_d: [theta1_d, theta2_d]
+    t_span: (t_start, t_end)
+    dt : fixed output time step
+    is_pid : if True, pass dt to controller.compute_control
 
-    Returns
-    -------
-    times   : (N,)    time stamps
-    states  : (N, 4)  state trajectories
-    torques : (N, 2)  applied control actions
+    Returns:
+    times: (N,) - time stamps
+    states: (N, 4) - state trajectories
+    torques: (N, 2) - applied control actions
     """
+
     t_eval = np.arange(t_span[0], t_span[1] + dt, dt)
     n_steps = len(t_eval)
 
@@ -44,7 +43,6 @@ def run_simulation(
     for i in range(n_steps):
         states[i] = current_state
 
-        # --- control action ---
         if is_pid:
             a = controller.compute_control(current_state, theta_d, dt)
         else:
@@ -52,7 +50,6 @@ def run_simulation(
 
         torques[i] = a
 
-        # --- integrate one step ---
         if i < n_steps - 1:
             sol = solve_ivp(
                 fun=lambda t, y: robot.dynamics(t, y, a),

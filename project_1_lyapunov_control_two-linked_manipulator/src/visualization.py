@@ -3,8 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-
-# ---------- style defaults ----------
 plt.rcParams.update({
     "figure.dpi": 150,
     "font.size": 10,
@@ -13,15 +11,13 @@ plt.rcParams.update({
 })
 
 
-# =====================================================================
-# 1.  Comparison plots (Lyapunov vs PID)
-# =====================================================================
+# ------------------------------------------------------------------
+#     Comparison plots (Lyapunov vs PID)
+# ------------------------------------------------------------------
 
-def plot_comparison(
-    times, states_lyap, torques_lyap, states_pid, torques_pid,
-    theta_d, save_dir="figures",
-):
+def plot_comparison(times, states_lyap, torques_lyap, states_pid, torques_pid, theta_d, save_dir="figures",):
     """6-panel figure: angles, errors, torques for both controllers."""
+
     os.makedirs(save_dir, exist_ok=True)
 
     target = np.asarray(theta_d)
@@ -30,7 +26,7 @@ def plot_comparison(
 
     fig, axs = plt.subplots(3, 2, figsize=(14, 9), sharex=True)
 
-    # --- row 0: angles ---
+    # row 0: angles
     axs[0, 0].plot(times, states_lyap[:, 0], label=r"$\theta_1$")
     axs[0, 0].plot(times, states_lyap[:, 1], label=r"$\theta_2$")
     axs[0, 0].axhline(target[0], color="r", ls="--", lw=0.8, label=r"$\theta_{1d}$")
@@ -47,7 +43,7 @@ def plot_comparison(
     axs[0, 1].set_title("Joint angles - PID")
     axs[0, 1].legend(fontsize=8)
 
-    # --- row 1: tracking errors ---
+    # row 1: tracking errors
     axs[1, 0].plot(times, err_lyap[:, 0], label=r"$e_1$")
     axs[1, 0].plot(times, err_lyap[:, 1], label=r"$e_2$")
     axs[1, 0].set_ylabel("Error [rad]")
@@ -60,7 +56,7 @@ def plot_comparison(
     axs[1, 1].set_title("Tracking error - PID")
     axs[1, 1].legend(fontsize=8)
 
-    # --- row 2: control torques ---
+    # row 2: control torques
     axs[2, 0].plot(times, torques_lyap[:, 0], label=r"$\tau_1$")
     axs[2, 0].plot(times, torques_lyap[:, 1], label=r"$\tau_2$")
     axs[2, 0].set_ylabel("Torque [N·m]")
@@ -86,12 +82,13 @@ def plot_comparison(
     print(f"  Saved {path}")
 
 
-# =====================================================================
-# 2.  Lyapunov function plot
-# =====================================================================
+# ------------------------------------------------------------------
+#     Lyapunov function plot
+# ------------------------------------------------------------------
 
 def plot_lyapunov(times, L_vals, dL_vals, save_dir="figures"):
     """Plot L(t) and dL/dt over time to verify the stability guarantee."""
+
     os.makedirs(save_dir, exist_ok=True)
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
@@ -113,12 +110,13 @@ def plot_lyapunov(times, L_vals, dL_vals, save_dir="figures"):
     print(f"  Saved {path}")
 
 
-# =====================================================================
-# 3.  Phase portrait
-# =====================================================================
+# ------------------------------------------------------------------
+#     Phase portrait
+# ------------------------------------------------------------------
 
 def plot_phase_portrait(times, states, theta_d, save_dir="figures"):
     """Phase portrait (theta_i, dtheta_i) for each joint."""
+
     os.makedirs(save_dir, exist_ok=True)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
@@ -148,12 +146,13 @@ def plot_phase_portrait(times, states, theta_d, save_dir="figures"):
     print(f"  Saved {path}")
 
 
-# =====================================================================
-# 4.  Animation
-# =====================================================================
+# ------------------------------------------------------------------
+#     Animation
+# ------------------------------------------------------------------
 
 def create_animation(times, states, l1, l2, theta_d, save_path="animations/robot_motion.gif"):
     """Animated two-link arm with target configuration overlay."""
+    
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -197,3 +196,172 @@ def create_animation(times, states, l1, l2, theta_d, save_path="animations/robot
     ani.save(save_path, writer="pillow", fps=30)
     plt.close(fig)
     print(f"  Saved {save_path}")
+
+
+# ------------------------------------------------------------------
+#     Gain sensitivity analysis
+# ------------------------------------------------------------------
+
+def plot_k_sensitivity_comparison(results: dict, save_dir: str = "figures") -> None:
+    """
+    Compare performance across 5 different (k1, k2) pairs.
+    
+    Parameters:
+    results: dict with keys 'k_configs' (list of dicts) and 'simulations' (list of tuples)
+    """
+    os.makedirs(save_dir, exist_ok=True)
+    
+    simulations = results["simulations"]
+    descriptions = [sim[5] for sim in simulations]
+    colors = plt.cm.viridis(np.linspace(0, 1, len(simulations)))
+    
+    # Figure 1: Joint angles comparison
+    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    
+    for idx, (times, states, torques, k1, k2, desc) in enumerate(simulations):
+        theta_d = results["theta_d"]
+        color = colors[idx]
+        
+        # Joint 1 angles
+        axes[0].plot(times, states[:, 0], color=color, label=desc, linewidth=2)
+        # Joint 2 angles
+        axes[1].plot(times, states[:, 1], color=color, linewidth=2)
+    
+    # Target lines
+    axes[0].axhline(results["theta_d"][0], color="r", ls="--", lw=1.5, alpha=0.7, label=r"$\theta_{1d}$")
+    axes[1].axhline(results["theta_d"][1], color="r", ls="--", lw=1.5, alpha=0.7, label=r"$\theta_{2d}$")
+    
+    axes[0].set_ylabel(r"$\theta_1$ [rad]", fontsize=11)
+    axes[1].set_ylabel(r"$\theta_2$ [rad]", fontsize=11)
+    axes[1].set_xlabel("Time [s]")
+    axes[0].set_title("Joint Angles - Sensitivity to Gain Values")
+    axes[0].legend(loc="best", fontsize=9)
+    axes[1].legend(loc="best", fontsize=9)
+    axes[0].grid(True, alpha=0.3)
+    axes[1].grid(True, alpha=0.3)
+    
+    fig.tight_layout()
+    path = os.path.join(save_dir, "k_sensitivity_angles.png")
+    fig.savefig(path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f"  Saved {path}")
+    
+    # Figure 2: Tracking errors comparison
+    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    
+    for idx, (times, states, torques, k1, k2, desc) in enumerate(simulations):
+        theta_d = results["theta_d"]
+        error = states[:, :2] - theta_d
+        color = colors[idx]
+        
+        # Error in joint 1
+        axes[0].plot(times, error[:, 0], color=color, label=desc, linewidth=2)
+        # Error in joint 2
+        axes[1].plot(times, error[:, 1], color=color, linewidth=2)
+    
+    axes[0].axhline(0, color="k", ls="--", lw=0.8, alpha=0.5)
+    axes[1].axhline(0, color="k", ls="--", lw=0.8, alpha=0.5)
+    
+    axes[0].set_ylabel(r"$e_1 = \theta_1 - \theta_{1d}$ [rad]", fontsize=11)
+    axes[1].set_ylabel(r"$e_2 = \theta_2 - \theta_{2d}$ [rad]", fontsize=11)
+    axes[1].set_xlabel("Time [s]")
+    axes[0].set_title("Tracking Errors - Sensitivity to Gain Values")
+    axes[0].legend(loc="best", fontsize=9)
+    axes[0].grid(True, alpha=0.3)
+    axes[1].grid(True, alpha=0.3)
+    
+    fig.tight_layout()
+    path = os.path.join(save_dir, "k_sensitivity_errors.png")
+    fig.savefig(path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f"  Saved {path}")
+    
+    # Figure 3: Control torques comparison
+    fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    
+    for idx, (times, states, torques, k1, k2, desc) in enumerate(simulations):
+        color = colors[idx]
+        
+        # Torque on joint 1
+        axes[0].plot(times, torques[:, 0], color=color, label=desc, linewidth=2)
+        # Torque on joint 2
+        axes[1].plot(times, torques[:, 1], color=color, linewidth=2)
+    
+    axes[0].set_ylabel(r"$\tau_1$ [N·m]", fontsize=11)
+    axes[1].set_ylabel(r"$\tau_2$ [N·m]", fontsize=11)
+    axes[1].set_xlabel("Time [s]")
+    axes[0].set_title("Control Torques - Sensitivity to Gain Values")
+    axes[0].legend(loc="best", fontsize=9)
+    axes[0].grid(True, alpha=0.3)
+    axes[1].grid(True, alpha=0.3)
+    
+    fig.tight_layout()
+    path = os.path.join(save_dir, "k_sensitivity_torques.png")
+    fig.savefig(path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f"  Saved {path}")
+    
+    # Figure 4: Performance metrics table
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.axis('tight')
+    ax.axis('off')
+    
+    # Configuration names list (independent of gain_analysis)
+    config_names = ["Very Small", "Small", "Current", "Large", "Very Large"]
+    
+    # Compute metrics
+    metrics_data = []
+    for idx, (times, states, torques, k1, k2, desc) in enumerate(simulations):
+        error = states[:, :2] - results["theta_d"]
+        error_norm = np.linalg.norm(error, axis=1)
+        
+        settling_threshold = 0.02
+        settling_idx = np.where(error_norm < settling_threshold)[0]
+        settling_time = times[settling_idx[0]] if len(settling_idx) > 0 else times[-1]
+        
+        max_error = np.max(error_norm)
+        final_error = error_norm[-1]
+        max_torque = np.max(np.abs(torques))
+        control_energy = np.sum(torques**2) * (times[1] - times[0])
+        
+        config_name = config_names[idx] if idx < len(config_names) else desc
+        
+        metrics_data.append([
+            config_name,
+            f"{k1:.0f}",
+            f"{k2:.0f}",
+            f"{settling_time:.2f}",
+            f"{max_error:.4f}",
+            f"{final_error:.6f}",
+            f"{max_torque:.1f}",
+            f"{control_energy:.0f}",
+        ])
+    
+    columns = [r"$Configuration$", r"$k_1$", r"$k_2$", 
+               "Settling\nTime [s]", "Max Error\n[rad]", 
+               "Final Error\n[rad]", "Max Torque\n[N·m]", 
+               "Energy\n[N·m·s]"]
+    
+    table = ax.table(cellText=metrics_data, colLabels=columns, cellLoc='center', 
+                     loc='center', bbox=[0, 0, 1, 1])
+    table.auto_set_font_size(False)
+    table.set_fontsize(9)
+    table.scale(1, 2)
+    
+    # Style header
+    for i in range(len(columns)):
+        table[(0, i)].set_facecolor('#4472C4')
+        table[(0, i)].set_text_props(weight='bold', color='white')
+    
+    # Alternate row colors
+    for i in range(1, len(metrics_data) + 1):
+        for j in range(len(columns)):
+            if i % 2 == 0:
+                table[(i, j)].set_facecolor('#E7E6E6')
+            else:
+                table[(i, j)].set_facecolor('#F2F2F2')
+    
+    path = os.path.join(save_dir, "k_sensitivity_metrics_table.png")
+    fig.savefig(path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f"  Saved {path}")
