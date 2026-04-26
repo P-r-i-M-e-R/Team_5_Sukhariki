@@ -1,0 +1,52 @@
+# ============================================================
+# Parameters for Project 2: adaptive control with unknown payload mass
+# ============================================================
+
+# Physical parameters of the known robot links plus the true carried object.
+robot:
+  m1: 1.0             # Mass of link 1 [kg]
+  m2: 2.0             # Mass of link 2 [kg]
+  l1: 1.0             # Length of link 1 [m]
+  l2: 1.0             # Length of link 2 [m]
+  g:  9.81            # Gravitational acceleration [m/s^2]
+  payload_mass: 3.0   # True object mass held by the gripper [kg]
+
+# Simulation settings
+simulation:
+  t_start: 0.0
+  t_end:   8.0
+  dt:      0.01
+  # Initial state: [theta1, theta2, dtheta1, dtheta2]
+  initial_state: [3.14159265, 0.0, 0.0, 0.0]
+
+# Target configuration [theta1_d, theta2_d]
+control:
+  target_theta1: 0.9
+  target_theta2: -0.45
+
+# Non-adaptive PD + known-link gravity baseline.
+baseline:
+  k1: 90.0
+  k2: 28.0
+
+# Adaptive Slotine-Li controller gains.
+adaptive_control:
+  lambda: 4.0
+  kd: 80.0
+
+# Adaptive payload-mass estimator
+# dot_hat_m_p = -alpha * Y_p(theta, dtheta, theta_r, ddtheta_r)^T s
+adaptive:
+  alpha: 0.03
+  initial_payload_mass_hat: 5.0
+
+# Legacy PID controller gains from Project 1 experiments.
+# Kept for optional experimentation; main.py uses the adaptive and baseline
+# controllers above.
+pid:
+  kp1: 30.0
+  ki1: 20.0
+  kd1: 15.0
+  kp2: 30.0
+  ki2: 20.0
+  kd2: 10.0
