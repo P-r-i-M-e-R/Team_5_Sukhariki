@@ -5,20 +5,20 @@
 </p>
 
 <p align="center">
-  <em>Two-link manipulator moving to a target configuration while holding an object whose mass is unknown to the controller.</em>
+  <em>Adaptive controller (blue) steering the two-link arm to the target while simultaneously estimating the unknown payload mass. The non-adaptive baseline (orange) converges to the wrong position.</em>
 </p>
 
 ---
 
 ## 1. Problem Definition
 
-**Control problem:** stabilize a planar two-link robot manipulator at a desired joint configuration while the robot is carrying an object of unknown mass. The controller knows the link parameters, but it does not know the payload mass in the gripper.
+**Control problem:** stabilize a planar two-link robot manipulator at a desired joint configuration while the robot is carrying an object of unknown mass. The controller knows the link parameters but does not know the payload mass in the gripper.
 
 **Plant:** a nonlinear two-degree-of-freedom arm in a vertical plane. The known robot links contribute the usual inertia, Coriolis/centrifugal, and gravity terms. The carried object is modeled as a point mass at the end effector; its true mass is constant but unknown.
 
-**Method:** model-based adaptive control with certainty equivalence and a Lyapunov proof. The controller estimates the scalar payload mass online and uses the estimate in the dynamic compensation term.
+**Method:** model-based adaptive control with a Lyapunov stability proof. The controller introduces a filtered error signal that combines position and velocity deviations, estimates the scalar payload mass online, and uses that estimate in the dynamic compensation term, guaranteeing asymptotic convergence to the desired configuration.
 
-**Comparison:** the adaptive controller is compared with a non-adaptive PD + known-link gravity baseline. The baseline compensates only the robot links and therefore treats the object as an unmodeled load.
+**Comparison:** the adaptive controller is compared with a non-adaptive PD + known-link gravity baseline. The baseline compensates only the robot links and therefore treats the object as an unmodeled load, resulting in a permanent steady-state position error.
 
 ---
 
@@ -26,23 +26,39 @@
 
 ### Physical Setup
 
-The robot has two rigid links of lengths $l_1,l_2$ and known masses $m_1,m_2$. A payload with unknown mass $m_p>0$ is held at the end effector.
+The robot has two rigid links of lengths $l_1, l_2$ and known masses $m_1, m_2$. A payload with unknown mass $m_p > 0$ is held at the end effector.
 
 <p align="center">
   <img src="figures/manipulator_model.png" alt="Two-Link Planar Robot Manipulator Model" width="500"/>
 </p>
 
 <p align="center">
-  <em>Figure 1: two-link planar manipulator carrying a point payload of unknown mass $m_p$.</em>
+  <em>Figure 1: two-link planar manipulator carrying a point payload of unknown mass m<sub>p</sub>.</em>
 </p>
 
-### State and Input
+### State Variables
+
+The state vector $x \in \mathbb{R}^4$ is defined as:
 
 ```math
-x = [\theta_1,\theta_2,\dot{\theta}_1,\dot{\theta}_2]^T,
-\qquad
-a = [\tau_1,\tau_2]^T .
+x = [\theta_1, \theta_2, \dot{\theta}_1, \dot{\theta}_2]^T
 ```
+
+| Symbol | Meaning | Units |
+|---|---|---|
+| $\theta_1, \theta_2$ | Joint angles (Link 1 relative to horizontal, Link 2 relative to Link 1) | rad |
+| $\dot{\theta}_1, \dot{\theta}_2$ | Joint angular velocities | rad/s |
+| $\ddot{\theta}_1, \ddot{\theta}_2$ | Joint angular accelerations | rad/s² |
+
+### Control Input
+
+The control input is the vector of applied joint torques:
+
+```math
+a = [\tau_1, \tau_2]^T \in \mathbb{R}^2
+```
+
+**Control constraints:** the torques are **unconstrained** in this simulation — no actuator saturation is modeled. In a physical implementation each $|\tau_i|$ would be bounded by the motor's rated torque.
 
 The target is a constant configuration
 
@@ -50,22 +66,24 @@ The target is a constant configuration
 \theta_d = [\theta_{1d},\theta_{2d}]^T .
 ```
 
-The unknown parameter and its estimate are
+The unknown parameter, its estimate, and the estimation error are
 
 ```math
-m_p > 0,\qquad \hat m_p(t),\qquad \tilde m_p = \hat m_p - m_p .
+m_p > 0,\qquad \hat{m}_p(t),\qquad \tilde{m}_p = \hat{m}_p - m_p .
 ```
 
-### Parameters Used in the Simulation
+### Dynamic Parameters
 
-| Symbol | Meaning | Value |
-|---|---|---:|
-| $m_1$ | Link 1 mass | 1.0 kg |
-| $m_2$ | Link 2 mass | 2.0 kg |
-| $l_1$ | Link 1 length | 1.0 m |
-| $l_2$ | Link 2 length | 1.0 m |
-| $g$ | Gravity acceleration | 9.81 m/s² |
-| $m_p$ | True payload mass | 3.0 kg, unknown to controller |
+| Symbol | Meaning | Value | Units |
+|---|---|---:|---|
+| $m_1$ | Mass of Link 1 | 1.0 | kg |
+| $m_2$ | Mass of Link 2 | 2.0 | kg |
+| $l_1$ | Length of Link 1 | 1.0 | m |
+| $l_2$ | Length of Link 2 | 1.0 | m |
+| $g$ | Gravitational acceleration | 9.81 | m/s² |
+| $m_p$ | True payload mass (unknown to controller) | 3.0 | kg |
+| $\hat{m}_p(t)$ | Online estimate of the payload mass produced by the adaptive controller | — | kg |
+| $\tilde{m}_p = \hat{m}_p - m_p$ | Payload mass estimation error | — | kg |
 
 ---
 
@@ -81,26 +99,25 @@ M(\theta)\,\ddot{\theta} + C(\theta,\dot{\theta})\,\dot{\theta} + G(\theta) = a 
 
 where:
 
-- $\theta = [\theta_1, \theta_2]^T$
 - $M(\theta) \in \mathbb{R}^{2\times2}$ is the symmetric, positive-definite inertia matrix
 - $C(\theta,\dot{\theta}) \in \mathbb{R}^{2\times2}$ is the Coriolis and centrifugal matrix
 - $G(\theta) \in \mathbb{R}^2$ is the gravity vector
 
 ### 3.2 Effect of the Unknown Payload
 
-The payload mass $m_u$ at the tip of Link 2 contributes to all three terms **linearly**. We decompose each term as:
+The payload mass $m_p$ at the tip of Link 2 contributes to all three terms **linearly**. We decompose each term as:
 
 ```math
-M(\theta) = M_0(\theta) + m_u\, M_p(\theta)
+M(\theta) = M_0(\theta) + m_p\, M_p(\theta)
 ```
 ```math
-C(\theta,\dot{\theta}) = C_0(\theta,\dot{\theta}) + m_u\, C_p(\theta,\dot{\theta})
+C(\theta,\dot{\theta}) = C_0(\theta,\dot{\theta}) + m_p\, C_p(\theta,\dot{\theta})
 ```
 ```math
-G(\theta) = G_0(\theta) + m_u\, G_p(\theta)
+G(\theta) = G_0(\theta) + m_p\, G_p(\theta)
 ```
 
-where the subscript $0$ denotes the **known nominal part** (identical to Project 1), and the $p$ terms are **known regressor matrices** that encode how a unit point mass at the tip affects the dynamics.
+where the subscript $0$ denotes the **known nominal part** (robot links only), and the $p$ terms are **known regressor matrices** that encode how a unit point mass at the tip affects the dynamics.
 
 #### Nominal Inertia Matrix $M_0(\theta)$
 
@@ -119,8 +136,6 @@ M_{22} &= m_2 l_2^2
 \end{aligned}
 ```
 
-The matrix $M_0(\theta)$ is symmetric ($M_{21} = M_{12}$) and positive definite for all $\theta$.
-
 #### Payload Inertia Regressor $M_p(\theta)$
 
 A point mass at the tip of Link 2 contributes:
@@ -135,13 +150,13 @@ l_2^2 + l_1 l_2 \cos\theta_2 & l_2^2
 
 #### Nominal Coriolis Matrix $C_0(\theta,\dot{\theta})$
 
-Using the auxiliary term $h = -m_2 l_1 l_2 \sin\theta_2$:
+Using the auxiliary term $h_0 = -m_2 l_1 l_2 \sin\theta_2$:
 
 ```math
 C_0(\theta,\dot{\theta}) =
 \begin{bmatrix}
-h\dot{\theta}_2 & h(\dot{\theta}_1 + \dot{\theta}_2) \\
--h\dot{\theta}_1 & 0
+h_0\dot{\theta}_2 & h_0(\dot{\theta}_1 + \dot{\theta}_2) \\
+-h_0\dot{\theta}_1 & 0
 \end{bmatrix}
 ```
 
@@ -157,16 +172,16 @@ h_p\dot{\theta}_2 & h_p(\dot{\theta}_1 + \dot{\theta}_2) \\
 \end{bmatrix}
 ```
 
-This particular form of $C_0$ (and identically $C_p$) is constructed using Christoffel symbols so that $\dot{M}_0 - 2C_0$ is skew-symmetric. Since $m_u$ is a constant scalar, the same property holds for the full matrices $M = M_0 + m_u M_p$ and $C = C_0 + m_u C_p$. That is, for any vector $x \in \mathbb{R}^2$:
+Both $C_0$ and $C_p$ are constructed via Christoffel symbols so that $\dot{M}_0 - 2C_0$ and $\dot{M}_p - 2C_p$ are each skew-symmetric. Since $m_p$ is a constant scalar, the full matrices $M$ and $C$ inherit this property:
 
 ```math
-x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0 \qquad \text{(2)}
+x^T \bigl(\dot{M}(\theta) - 2C(\theta,\dot{\theta})\bigr) x = 0, \quad \forall\, x \in \mathbb{R}^2 \qquad \text{(2)}
 ```
 
 An equivalent and useful rewriting:
 
 ```math
-x^T \dot{M} x = 2 x^T C x \qquad \text{(2')}
+x^T \dot{M}\, x = 2\, x^T C\, x \qquad \text{(2')}
 ```
 
 #### Nominal Gravity Vector $G_0(\theta)$
@@ -189,358 +204,318 @@ g l_2 \cos(\theta_1 + \theta_2)
 \end{bmatrix}
 ```
 
-### 3.3 Regressor Form of the Dynamics
+### 3.3 Linear Parameterization
 
-Substituting the decompositions into (1) and separating known and unknown parts:
+The unknown payload contribution enters the dynamics **linearly** through the same channel as the control input. Separating known from unknown parts:
 
 ```math
-M_0(\theta)\,\ddot{\theta} + C_0(\theta,\dot{\theta})\,\dot{\theta} + G_0(\theta) = a - m_u\,\underbrace{\bigl(M_p(\theta)\,\ddot{\theta} + C_p(\theta,\dot{\theta})\,\dot{\theta} + G_p(\theta)\bigr)}_{\displaystyle Y(\theta,\dot{\theta},\ddot{\theta})\;\in\;\mathbb{R}^2}
+M_0(\theta)\,\ddot{\theta} + C_0(\theta,\dot{\theta})\,\dot{\theta} + G_0(\theta)
++\; m_p\,\underbrace{\bigl(M_p(\theta)\,\ddot{\theta} + C_p(\theta,\dot{\theta})\,\dot{\theta} + G_p(\theta)\bigr)}_{Y_p^{\mathrm{act}}(\theta,\dot{\theta},\ddot{\theta})\;\in\;\mathbb{R}^2}
+= a
 \qquad \text{(3)}
 ```
 
-The vector $Y(\theta,\dot\theta,\ddot\theta)$ is the **regressor** — it depends only on the state and acceleration, both of which are measurable. The unknown parameter $m_u$ enters equation (3) **linearly** and **through the same channel as the control input $a$**. This structural property is what makes it possible to cancel the unknown term exactly through the control law.
+This linear parameterization — $m_p$ enters (3) multiplicatively as a scalar in front of a computable vector — is the structural property that makes exact online cancellation possible.
+
+**Matching condition.** The unknown parameter $m_p$ enters the equations of motion through the same channel as the control input $a$: comparing the left-hand side of (3) with the right-hand side, we can write
+
+```math
+a = \underbrace{M_0 \ddot{\theta} + C_0 \dot{\theta} + G_0}_{\text{known}} + m_p\, Y_p^{\mathrm{act}} .
+```
+
+Because the unknown term $m_p Y_p^{\mathrm{act}}$ is matched by the control channel, substituting $\hat{m}_p$ for $m_p$ in the control law cancels it exactly up to the estimation error $\tilde{m}_p = \hat{m}_p - m_p$. This is the key structural property exploited by the **certainty-equivalence** approach described in Section 4.2.
 
 ---
 
 ## 4. Method Description and Stability Proof
 
-### 4.1 Non-Adaptive Controller (Project 1)
+### 4.1 Non-Adaptive Controller (Baseline)
 
-For reference and comparison, we first state the non-adaptive controller designed for the payload-free system ($m_u = 0$). The **PD controller with gravity compensation** is:
+For reference, the non-adaptive baseline is the **PD controller with known-link gravity compensation** from Project 1, applied here to the loaded plant:
 
 ```math
 a = -k_1 e - k_2 \dot{\theta} + G_0(\theta) \qquad \text{(4)}
 ```
 
-where $e = \theta - \theta_d$ is the joint angle error and $k_1, k_2 > 0$ are scalar gains.
+where $e = \theta - \theta_d$ is the joint angle error, $k_1 > 0$ is the proportional (stiffness) gain, and $k_2 > 0$ is the derivative (damping) gain.
 
-- $-k_1 e$: Proportional feedback — a restoring force pulling the system toward $\theta_d$.
-- $-k_2\dot{\theta}$: Derivative feedback — a damping force dissipating kinetic energy.
-- $+G_0(\theta)$: Exact cancellation of gravitational torques (for the known part only).
-
-When $m_u = 0$, substituting (4) into (1) gives the closed-loop dynamics:
+When the payload is absent ($m_p = 0$), substituting (4) into (1) gives the closed-loop dynamics:
 
 ```math
-M_0(\theta)\,\ddot{\theta} + C_0(\theta,\dot{\theta})\,\dot{\theta} + k_2\dot{\theta} + k_1 e = 0 \qquad \text{(5)}
+M_0\,\ddot{\theta} + C_0\,\dot{\theta} + k_2\dot{\theta} + k_1 e = 0 \qquad \text{(5)}
 ```
 
-#### Lyapunov Function for the Non-Adaptive Controller
+The Lyapunov function $L = \tfrac{1}{2}\dot{\theta}^T M_0 \dot{\theta} + \tfrac{1}{2}k_1 e^T e$ satisfies $\dot{L} = -k_2\|\dot{\theta}\|^2 \leq 0$, and by LaSalle's Invariance Principle, $e(t)\to 0$ and $\dot{\theta}(t)\to 0$.
 
-Consider the energy-like function $L(e, \dot{\theta})$:
+#### Failure When $m_p \neq 0$
+
+When the payload is present but the controller ignores it, gravity compensation $G_0(\theta)$ is incomplete — it underestimates the actual gravitational torques by $m_p G_p(\theta)$. The closed-loop dynamics become:
 
 ```math
-L(e, \dot{\theta}) = \underbrace{\frac{1}{2} \dot{\theta}^T M_0(\theta) \dot{\theta}}_{\text{Kinetic Energy}} + \underbrace{\frac{1}{2}k_1 e^T e}_{\text{Potential Energy}} \qquad \text{(6)}
+M(\theta)\,\ddot{\theta} + C(\theta,\dot{\theta})\,\dot{\theta} + k_2\dot{\theta} + k_1 e = m_p\, G_p(\theta) \qquad \text{(9)}
 ```
 
-**Positive Definiteness of $L$:**
-
-Since $M_0(\theta)$ is symmetric and positive definite for all $\theta$, there exists $\lambda_{\min} > 0$ such that $\dot{\theta}^T M_0 \dot{\theta} \geq \lambda_{\min}\|\dot{\theta}\|^2 > 0$ for all $\dot{\theta} \neq 0$. The second term satisfies $\frac{1}{2}k_1 e^T e > 0$ for all $e \neq 0$ since $k_1 > 0$. Therefore $L(e, \dot{\theta}) > 0$ for all $(e, \dot{\theta}) \neq (0,0)$, and $L(0,0) = 0$. Thus, $L$ is **positive definite**.
-
-**Step 2: Time Derivative of $L$**
-
-**Given:**
+where the right-hand side is a **persistent disturbance** driven by the uncompensated payload. At any steady state ($\dot\theta = \ddot\theta = 0$), equation (9) reduces to:
 
 ```math
-L(e, \dot{\theta}) = \frac{1}{2} \dot{\theta}^T M_0(\theta) \dot{\theta} + \frac{1}{2}k_1 e^T e
+k_1 e^* = m_p\, G_p(\theta^*) \qquad \Rightarrow \qquad e^* = \frac{m_p}{k_1} G_p(\theta_d) \neq 0
 ```
 
-Differentiate each term with respect to time.
-
-**Term 1:** $\frac{1}{2}\dot{\theta}^T M_0(\theta)\dot{\theta}$
-
-Apply the product rule for three factors:
-
-```math
-\frac{d}{dt}\left(\frac{1}{2} \dot{\theta}^T M_0 \dot{\theta}\right) = \frac{1}{2} \ddot{\theta}^T M_0 \dot{\theta} + \frac{1}{2} \dot{\theta}^T \dot{M}_0 \dot{\theta} + \frac{1}{2} \dot{\theta}^T M_0 \ddot{\theta}
-```
-
-Since $M_0$ is symmetric, $\ddot{\theta}^T M_0 \dot{\theta} = \dot{\theta}^T M_0 \ddot{\theta}$, therefore the first and third terms combine:
-
-```math
-= \dot{\theta}^T M_0 \ddot{\theta} + \frac{1}{2} \dot{\theta}^T \dot{M}_0 \dot{\theta}
-```
-
-**Term 2:** $\frac{1}{2}k_1 e^T e$
-
-```math
-\frac{d}{dt}\left(\frac{1}{2}k_1 e^T e\right) = k_1 e^T \dot{e}
-```
-
-Since $\theta_d$ is constant, $\dot{e} = \dot{\theta}$, therefore:
-
-```math
-= k_1 e^T \dot{\theta}
-```
-
-**Total:**
-
-```math
-\dot{L} = \dot{\theta}^T M_0 \ddot{\theta} + \frac{1}{2} \dot{\theta}^T \dot{M}_0 \dot{\theta} + k_1 e^T \dot{\theta}
-```
-
-Use the skew-symmetry property of $(\dot{M}_0 - 2C_0)$: for any vector $x$, $x^T(\dot{M}_0 - 2C_0)x = 0$, which implies $\frac{1}{2}x^T \dot{M}_0 x = x^T C_0 x$. Substituting $x = \dot{\theta}$:
-
-```math
-\frac{1}{2} \dot{\theta}^T \dot{M}_0 \dot{\theta} = \dot{\theta}^T C_0 \dot{\theta}
-```
-
-We obtain:
-
-```math
-\dot{L} = \dot{\theta}^T M_0 \ddot{\theta} + \dot{\theta}^T C_0 \dot{\theta} + k_1 e^T \dot{\theta} = \dot{\theta}^T\underbrace{(M_0\ddot{\theta} + C_0\dot{\theta})}_{\text{from (5)}} + k_1 e^T \dot{\theta}
-```
-
-From the closed-loop dynamics (5): $M_0\ddot{\theta} + C_0\dot{\theta} = -k_1 e - k_2\dot{\theta}$. Substitute:
-
-```math
-\dot{L} = \dot{\theta}^T(-k_1 e - k_2 \dot{\theta}) + k_1 e^T \dot{\theta}
-```
-
-```math
-\dot{L} = -k_1\underbrace{\dot{\theta}^T e}_{=\, e^T\dot{\theta}} - k_2\dot{\theta}^T\dot{\theta} + k_1 e^T\dot{\theta}
-```
-
-The first and third terms cancel:
-
-```math
-\dot{L} = -k_2\|\dot{\theta}\|^2 \qquad \text{(7)}
-```
-
-Since $k_2 > 0$, we have $\dot{L} \leq 0$ for all $(e, \dot{\theta})$, and $\dot{L} = 0$ only when $\dot{\theta} = 0$. Furthermore, if $\dot{\theta}(t) \equiv 0$, then $\ddot{\theta} \equiv 0$, and substituting into the closed-loop equation (5) gives $k_1 e = 0$, hence $e = 0$. By LaSalle's invariance principle, the equilibrium $(\theta, \dot{\theta}) = (\theta_d, 0)$ is **asymptotically stable**:
-
-```math
-e(t) \to 0 \quad \text{and} \quad \dot{\theta}(t) \to 0 \quad \text{as} \quad t \to \infty \qquad \text{(8)}
-```
-
-#### Failure of the Non-Adaptive Controller When $m_u \neq 0$
-
-When the payload is present but the controller does not know it, the gravity compensation $G_0(\theta)$ is incomplete — it underestimates the gravitational torques by $m_u G_p(\theta)$. The closed-loop dynamics become:
-
-```math
-M(\theta)\,\ddot{\theta} + C(\theta,\dot{\theta})\,\dot{\theta} + k_2\dot{\theta} + k_1 e = m_u\, Y(\theta,\dot{\theta},\ddot{\theta}) \qquad \text{(9)}
-```
-
-where the right-hand side is a **persistent disturbance** caused by the uncompensated payload. At any steady state where $\dot{\theta} = \ddot{\theta} = 0$, equation (9) reduces to:
-
-```math
-k_1 e^* = m_u\, G_p(\theta^*) \qquad \Rightarrow \qquad e^* = \frac{m_u}{k_1} G_p(\theta_d) \neq 0
-```
-
-This shows that the non-adaptive controller converges to a **wrong equilibrium** that is offset from $\theta_d$ by an amount proportional to $m_u$. No choice of gains $k_1$ and $k_2$ can remove this error — it is structural, not a tuning problem.
+The non-adaptive controller converges to a **wrong equilibrium** that is offset from $\theta_d$ by an amount proportional to $m_p / k_1$. No choice of gains $k_1$ and $k_2$ can remove this error — it is structural, not a tuning problem.
 
 ---
 
 ### 4.2 Adaptive Controller
 
+**Certainty-Equivalence (CE) principle.** The adaptive controller uses the CE approach: it constructs the nominal control law as if the payload mass were exactly known, then replaces the unknown true value $m_p$ with its current online estimate $\hat{m}_p(t)$ everywhere in the formula. The matching condition from Section 3.3 guarantees that this substitution reduces the closed-loop error to a term proportional to $\tilde{m}_p = \hat{m}_p - m_p$, which the adaptation law drives to zero.
+
+The table below summarises all symbols introduced in this section.
+
+| Symbol | Meaning | Units |
+|---|---|---|
+| $e = \theta - \theta_d$ | Joint angle tracking error | rad |
+| $s = \dot{\theta} + \lambda e$ | Filtered error (combines position and velocity into one signal) | rad/s |
+| $\lambda > 0$ | Filtered-error gain; sets the rate of exponential error decay when $s=0$ | s⁻¹ |
+| $\dot{\theta}_r = -\lambda e$ | Reference velocity used in the control law | rad/s |
+| $\ddot{\theta}_r = -\lambda\dot{\theta}$ | Reference acceleration used in the control law | rad/s² |
+| $Y_p \in \mathbb{R}^2$ | Payload regressor vector — encodes the payload contribution per unit mass at the reference trajectory | N·m/kg |
+| $\tau_0 \in \mathbb{R}^2$ | Nominal torque from the known link dynamics evaluated at the reference trajectory | N·m |
+| $k_d > 0$ | Damping gain; provides dissipation along the filtered-error direction | N·m·s/rad |
+| $\alpha > 0$ | Adaptation gain; controls the speed of payload-mass estimation | — |
+| $L_c \geq 0$ | Augmented Lyapunov function — sum of filtered kinetic energy and estimation penalty | J |
+
+#### Filtered Error and Reference Trajectories
+
+We introduce a **filtered error** that combines position and velocity deviations into a single signal:
+
+```math
+s = \dot{\theta} + \lambda\, e, \qquad \lambda > 0 \qquad \text{(10)}
+```
+
+When $s \equiv 0$, the error obeys $\dot{e} = \dot{\theta} = -\lambda e$, so $e(t) \to 0$ exponentially at rate $\lambda$. Therefore $s \to 0$ is a **sufficient condition** for position convergence.
+
+For a constant target $\theta_d$, the corresponding **reference velocity and reference acceleration** are:
+
+```math
+\dot{\theta}_r = -\lambda\, e, \qquad \ddot{\theta}_r = -\lambda\, \dot{\theta} \qquad \text{(11)}
+```
+
+Note that $s = \dot{\theta} - \dot{\theta}_r$ by construction.
+
+#### Payload Regressor Evaluated at Reference Trajectories
+
+The adaptive law requires the payload regressor evaluated at the **reference** values (11), not at the actual acceleration $\ddot{\theta}$:
+
+```math
+\begin{aligned}
+Y_p(\theta,\dot{\theta},\dot{\theta}_r,\ddot{\theta}_r)
+  &= M_p(\theta)\,\ddot{\theta}_r + C_p(\theta,\dot{\theta})\,\dot{\theta}_r + G_p(\theta) \\
+  &= -\lambda\, M_p(\theta)\,\dot{\theta} - \lambda\, C_p(\theta,\dot{\theta})\, e + G_p(\theta)
+  \qquad \text{(12)}
+\end{aligned}
+```
+
+This vector is entirely computable from the measured state; it does **not** require direct measurement of $\ddot{\theta}$.
+
 #### Control Law
 
-The **adaptive PD controller with estimated gravity compensation** replaces the unknown $m_u$ with its current estimate $\hat{m}_u(t)$:
+The adaptive controller replaces the unknown $m_p$ with its current estimate $\hat{m}_p(t)$:
 
 ```math
-a = -k_1 e - k_2 \dot{\theta} + G_0(\theta) + \hat{m}_u\, Y(\theta,\dot{\theta},\ddot{\theta}) \qquad \text{(10)}
+a = \underbrace{M_0(\theta)\,\ddot{\theta}_r + C_0(\theta,\dot{\theta})\,\dot{\theta}_r + G_0(\theta)}_{\text{known link dynamics at reference}} + \hat{m}_p\, Y_p - k_d\, s \qquad \text{(13)}
 ```
 
-where $Y$ is the regressor defined in (3). The estimate $\hat{m}_u$ is updated online by an adaptation law derived below.
+where $k_d > 0$ is the damping gain.
 
-#### Closed-Loop Dynamics
+- The first block cancels the known link dynamics evaluated at the reference trajectory.
+- $\hat{m}_p Y_p$: estimated payload compensation.
+- $-k_d s$: damping along the filtered-error direction.
 
-Define the estimation error:
+#### Closed-Loop Dynamics in Terms of $s$
+
+Since $s = \dot\theta - \dot\theta_r$, we have $\dot{s} = \ddot\theta - \ddot\theta_r$. Using the equations of motion (1):
 
 ```math
-\tilde{m}_u := \hat{m}_u - m_u \qquad \text{(11)}
+M\,\dot{s} + C\,s = a - \bigl(M\,\ddot{\theta}_r + C\,\dot{\theta}_r + G\bigr)
 ```
 
-Substituting (10) into (1) and using the full decomposition:
+Substituting the control law (13) and the full decompositions $M = M_0 + m_p M_p$, $C = C_0 + m_p C_p$, $G = G_0 + m_p G_p$:
 
 ```math
-(M_0 + m_u M_p)\ddot{\theta} + (C_0 + m_u C_p)\dot{\theta} + G_0 + m_u G_p = -k_1 e - k_2\dot{\theta} + G_0 + \hat{m}_u Y
+\begin{aligned}
+M\,\dot{s} + C\,s &= \bigl(M_0\ddot{\theta}_r + C_0\dot{\theta}_r + G_0 + \hat{m}_p Y_p - k_d s\bigr) \\
+&\quad - \bigl((M_0{+}m_p M_p)\ddot{\theta}_r + (C_0{+}m_p C_p)\dot{\theta}_r + (G_0{+}m_p G_p)\bigr)
+\end{aligned}
 ```
 
-The $G_0$ terms cancel. Using $\hat{m}_u Y = m_u Y + \tilde{m}_u Y$ and collecting:
+The nominal terms $M_0\ddot\theta_r + C_0\dot\theta_r + G_0$ cancel. Using $Y_p = M_p\ddot\theta_r + C_p\dot\theta_r + G_p$:
 
 ```math
-M(\theta)\,\ddot{\theta} + C(\theta,\dot{\theta})\,\dot{\theta} + k_2\dot{\theta} + k_1 e = \tilde{m}_u\, Y(\theta,\dot{\theta},\ddot{\theta}) \qquad \text{(12)}
+M\,\dot{s} + C\,s = (\hat{m}_p - m_p)\,Y_p - k_d\,s = \tilde{m}_p\,Y_p - k_d\,s \qquad \text{(14)}
 ```
 
-When $\tilde{m}_u = 0$, equation (12) reduces exactly to (5). The term $\tilde{m}_u Y$ is the residual disturbance driven by the estimation error alone.
+When $\tilde{m}_p = 0$ the filtered error decays purely from damping $k_d$.
 
 #### Augmented Lyapunov Function
 
-To design the adaptation law and prove stability, we augment $L$ with a quadratic penalty on the estimation error:
+To design the adaptation law and prove stability, we augment the kinetic term with a quadratic penalty on the estimation error:
 
 ```math
-L_c(e, \dot{\theta}, \tilde{m}_u) := \underbrace{\frac{1}{2} \dot{\theta}^T M(\theta) \dot{\theta} + \frac{1}{2}k_1 e^T e}_{L(e,\dot\theta)} + \underbrace{\frac{1}{2\gamma}\tilde{m}_u^2}_{\text{estimation penalty}} \qquad \text{(13)}
+L_c(s,\tilde{m}_p) = \underbrace{\frac{1}{2} s^T M(\theta)\, s}_{\text{filtered kinetic energy}} + \underbrace{\frac{1}{2\alpha}\tilde{m}_p^2}_{\text{estimation penalty}} \qquad \text{(15)}
 ```
 
-where $\gamma > 0$ is the adaptation gain.
+where $\alpha > 0$ is the adaptation gain.
 
-**Positive Definiteness of $L_c$:**
-
-The first two terms have the same structure as (6) but with the full matrix $M = M_0 + m_u M_p$. Since $M_0$ is positive definite and $M_p$ is positive semi-definite (it is the inertia contribution of a non-negative mass), $M$ is positive definite for all $m_u \geq 0$. The third term is non-negative. Therefore:
-
-```math
-L_c(e, \dot{\theta}, \tilde{m}_u) > 0 \quad \text{for all } (e, \dot{\theta}, \tilde{m}_u) \neq (0,0,0), \qquad L_c(0,0,0) = 0
-```
-
-Thus, $L_c$ is **positive definite**.
+**Positive Definiteness:** $M(\theta) = M_0 + m_p M_p$ is positive definite for all $m_p \geq 0$ (since $M_0$ is positive definite and $M_p$ is positive semi-definite). Therefore $L_c > 0$ for all $(s,\tilde{m}_p)\neq(0,0)$, and $L_c(0,0) = 0$.
 
 **Time Derivative of $L_c$:**
 
-**Term 1:** $\frac{1}{2}\dot{\theta}^T M(\theta)\dot{\theta}$
-
-Apply the product rule:
-
 ```math
-\frac{d}{dt}\left(\frac{1}{2} \dot{\theta}^T M \dot{\theta}\right) = \frac{1}{2} \ddot{\theta}^T M \dot{\theta} + \frac{1}{2} \dot{\theta}^T \dot{M} \dot{\theta} + \frac{1}{2} \dot{\theta}^T M \ddot{\theta}
+\dot{L}_c = s^T M\,\dot{s} + \frac{1}{2} s^T \dot{M}\, s + \frac{1}{\alpha}\tilde{m}_p\,\dot{\hat{m}}_p
 ```
 
-Since $M$ is symmetric, the first and third terms combine:
+Using the skew-symmetry property (2'): $\frac{1}{2} s^T \dot{M} s = s^T C s$:
 
 ```math
-= \dot{\theta}^T M \ddot{\theta} + \frac{1}{2} \dot{\theta}^T \dot{M} \dot{\theta}
+\dot{L}_c = s^T\bigl(M\,\dot{s} + C\,s\bigr) + \frac{1}{\alpha}\tilde{m}_p\,\dot{\hat{m}}_p
 ```
 
-Using the skew-symmetry property (2') for the full matrix $M$: $\frac{1}{2}\dot{\theta}^T \dot{M} \dot{\theta} = \dot{\theta}^T C \dot{\theta}$:
+Substituting the closed-loop dynamics (14):
 
 ```math
-\frac{d}{dt}\left(\frac{1}{2} \dot{\theta}^T M \dot{\theta}\right) = \dot{\theta}^T M \ddot{\theta} + \dot{\theta}^T C \dot{\theta}
+\begin{aligned}
+\dot{L}_c
+  &= s^T\bigl(\tilde{m}_p\,Y_p - k_d\,s\bigr) + \frac{1}{\alpha}\tilde{m}_p\,\dot{\hat{m}}_p \\
+  &= -k_d\|s\|^2 + \tilde{m}_p\!\left(s^T Y_p + \frac{1}{\alpha}\dot{\hat{m}}_p\right)
+  \qquad \text{(16)}
+\end{aligned}
 ```
 
-**Term 2:** $\frac{1}{2}k_1 e^T e$
-
-```math
-\frac{d}{dt}\left(\frac{1}{2}k_1 e^T e\right) = k_1 e^T \dot{\theta}
-```
-
-**Term 3:** $\frac{1}{2\gamma}\tilde{m}_u^2$
-
-Since $m_u$ is a constant, $\dot{\tilde{m}}_u = \dot{\hat{m}}_u$:
-
-```math
-\frac{d}{dt}\left(\frac{1}{2\gamma}\tilde{m}_u^2\right) = \frac{1}{\gamma}\tilde{m}_u\,\dot{\hat{m}}_u
-```
-
-**Combining all three terms:**
-
-```math
-\dot{L}_c = \dot{\theta}^T(M\ddot{\theta} + C\dot{\theta}) + k_1 e^T\dot{\theta} + \frac{1}{\gamma}\tilde{m}_u\,\dot{\hat{m}}_u
-```
-
-Substituting from the closed-loop dynamics (12) — $M\ddot{\theta} + C\dot{\theta} = -k_1 e - k_2\dot{\theta} + \tilde{m}_u Y$:
-
-```math
-\dot{L}_c = \dot{\theta}^T(-k_1 e - k_2\dot{\theta} + \tilde{m}_u Y) + k_1 e^T\dot{\theta} + \frac{1}{\gamma}\tilde{m}_u\,\dot{\hat{m}}_u
-```
-
-```math
-\dot{L}_c = -k_1\underbrace{\dot{\theta}^T e}_{=\, e^T\dot{\theta}} - k_2\|\dot{\theta}\|^2 + \tilde{m}_u\,\dot{\theta}^T Y + k_1 e^T\dot{\theta} + \frac{1}{\gamma}\tilde{m}_u\,\dot{\hat{m}}_u
-```
-
-The first and fourth terms cancel:
-
-```math
-\dot{L}_c = -k_2\|\dot{\theta}\|^2 + \tilde{m}_u\!\left(\dot{\theta}^T Y + \frac{1}{\gamma}\dot{\hat{m}}_u\right) \qquad \text{(14)}
-```
-
-The first term provides the desired dissipation. The second term is the **cross-term** that couples the state dynamics to the parameter estimation error.
+The first term provides the desired dissipation. The second term is the cross-term coupling state dynamics to parameter estimation error.
 
 #### Adaptation Law
 
-To cancel the cross-term in (14), we choose $\dot{\hat{m}}_u$ to make the parenthesis zero:
+To cancel the cross-term in (16), we choose:
 
 ```math
-\dot{\theta}^T Y + \frac{1}{\gamma}\dot{\hat{m}}_u = 0 \qquad \Rightarrow \qquad \boxed{\dot{\hat{m}}_u = -\gamma\,\dot{\theta}^T Y(\theta,\dot{\theta},\ddot{\theta})} \qquad \text{(15)}
+s^T Y_p + \frac{1}{\alpha}\dot{\hat{m}}_p = 0 \qquad \Rightarrow \qquad \boxed{\dot{\hat{m}}_p = -\alpha\,Y_p^T s} \qquad \text{(17)}
 ```
 
-Substituting (15) into (14):
+Substituting (17) into (16):
 
 ```math
-\dot{L}_c = -k_2\|\dot{\theta}\|^2 + \tilde{m}_u\!\left(\dot{\theta}^T Y - \dot{\theta}^T Y\right) = -k_2\|\dot{\theta}\|^2 \qquad \text{(16)}
+\dot{L}_c = -k_d\|s\|^2 \leq 0 \qquad \text{(18)}
 ```
 
 #### Stability by LaSalle's Invariance Principle
 
-**Step 1: All signals are bounded.**
+**Step 1: Boundedness of all signals.**
 
-From (16): $\dot{L}_c = -k_2\|\dot\theta\|^2 \leq 0$ for all time. Therefore $L_c(t) \leq L_c(0) < \infty$, which implies that $e(t)$, $\dot\theta(t)$, and $\tilde{m}_u(t)$ are all **bounded** for all $t \geq 0$.
-
-**Step 2: $\dot{\theta}(t) \to 0$.**
-
-Integrating (16) from $0$ to $\infty$:
+From (18): $L_c(t) \leq L_c(0) < \infty$ for all $t \geq 0$. Since $M(\theta)$ is uniformly positive definite with minimum eigenvalue $\lambda_{\min}(M) > 0$:
 
 ```math
-\int_0^\infty k_2\|\dot{\theta}(t)\|^2\,dt \leq L_c(0) < \infty
+\frac{\lambda_{\min}(M)}{2}\|s\|^2 \;\leq\; \frac{1}{2}s^T M s \;\leq\; L_c(0), \qquad \frac{1}{2\alpha}\tilde{m}_p^2 \;\leq\; L_c(0)
 ```
 
-so $\|\dot{\theta}\| \in L^2$. Since $e$, $\dot\theta$, and $\hat{m}_u$ are all bounded, the closed-loop equation (12) shows that $\ddot\theta$ is bounded as well. Therefore $\dot\theta$ is **uniformly continuous**. By **Barbalat's Lemma**:
+Therefore $s(t)$, $\tilde{m}_p(t)$, and hence $\hat{m}_p(t)$, $e(t)$, $\dot{\theta}(t)$ are all **bounded** for all $t \geq 0$.
+
+**Step 2: Definition of the invariant set.**
+
+Since $\dot{L}_c = -k_d\|s\|^2 \leq 0$, the level set $\Omega_c = \{L_c \leq L_c(0)\}$ is positively invariant. Define the subset where $\dot{L}_c$ vanishes:
 
 ```math
-\dot{\theta}(t) \to 0 \quad \text{as} \quad t \to \infty
+\mathcal{E} = \bigl\{(e,\dot{\theta},\tilde{m}_p) : \dot{L}_c = 0 \bigr\} = \bigl\{(e,\dot{\theta},\tilde{m}_p) : s = 0 \bigr\}
 ```
 
-**Step 3: $e(t) \to 0$ by LaSalle's Invariance Principle.**
+**Step 3: Analysis of trajectories confined to $\mathcal{E}$.**
 
-Consider the set:
+Consider any trajectory satisfying $s(t) \equiv 0$ for all $t \geq t_0$. Then $\dot{s}(t) \equiv 0$ as well. Two consequences follow immediately:
+
+**(a) Parameter estimate is frozen.** From the adaptation law (17):
 
 ```math
-\mathcal{S} = \left\{(e, \dot{\theta}, \tilde{m}_u) : \dot{L}_c = 0\right\} = \left\{(e, \dot{\theta}, \tilde{m}_u) : \dot{\theta} = 0\right\}
+\dot{\hat{m}}_p = -\alpha\, Y_p^T s = 0 \qquad \Rightarrow \qquad \tilde{m}_p = \mathrm{const}
 ```
 
-On any trajectory that stays in $\mathcal{S}$, we have $\dot\theta \equiv 0$ and hence $\ddot\theta \equiv 0$. From the adaptation law (15): $\dot{\hat{m}}_u = -\gamma\,\dot\theta^T Y = 0$, so $\tilde{m}_u$ is constant on $\mathcal{S}$. Substituting $\dot\theta = \ddot\theta = 0$ into (12):
+**(b) Residual dynamics vanish.** Substituting $s \equiv 0$ and $\dot{s} \equiv 0$ into the closed-loop equation (14):
 
 ```math
-k_1 e = \tilde{m}_u\, G_p(\theta)
+M\cdot 0 + C\cdot 0 = \tilde{m}_p\, Y_p - k_d\cdot 0 \qquad \Rightarrow \qquad \tilde{m}_p\, Y_p = 0
 ```
 
-Taking the time derivative of both sides (with $\dot\theta = 0$ and $\tilde{m}_u$ constant):
+With $s \equiv 0$: $\dot{\theta} = -\lambda e$, so $\dot{e} = \dot{\theta} = -\lambda e$, giving $e(t) = e_0\,e^{-\lambda t} \to 0$. The regressor at reference values therefore satisfies:
 
 ```math
-k_1\dot{e} = k_1\dot\theta = 0
+Y_p = \lambda^2 M_p(\theta)\,e \;-\; \lambda\, C_p(\theta,\dot{\theta})\,e \;+\; G_p(\theta) \;\xrightarrow[t\to\infty]{}\; G_p(\theta_d)
 ```
 
-which is already satisfied. However, the equation $k_1 e = \tilde{m}_u G_p(\theta)$ with $\dot\theta \equiv 0$ and $\dot{\tilde{m}}_u = 0$ represents a static balance. For this to be an invariant trajectory, the velocity must remain zero at all future times. But if $e \neq 0$, the PD term $-k_1 e$ would accelerate the arm, generating $\dot\theta \neq 0$ — a contradiction. Therefore the only solution consistent with $\dot\theta \equiv 0$ is $e \equiv 0$, which from $k_1 e = \tilde{m}_u G_p(\theta_d)$ implies $\tilde{m}_u = 0$. The largest invariant set in $\mathcal{S}$ is therefore $\{(0, 0, 0)\}$. By **LaSalle's Invariance Principle**:
+For any non-degenerate target configuration, $G_p(\theta_d) \neq 0$. Since $\tilde{m}_p$ is constant and $Y_p \to G_p(\theta_d) \neq 0$, the condition $\tilde{m}_p\, Y_p = 0$ can only be satisfied if:
 
 ```math
-e(t) \to 0, \quad \dot{\theta}(t) \to 0, \quad \tilde{m}_u(t) \to 0 \quad \text{as} \quad t \to \infty \qquad \blacksquare
+\tilde{m}_p = 0
 ```
 
-**Remark on parameter convergence:** LaSalle's argument shows $\hat{m}_u \to m_u$ in the limit. The rate of convergence depends on how much the regressor $Y$ is excited during the motion. If the arm settles quickly, $\hat{m}_u$ may converge slowly to the true value, though the state convergence $e \to 0$ is guaranteed regardless.
+**Step 4: Largest invariant set and conclusion.**
+
+The largest invariant set contained in $\mathcal{E}$ is the single equilibrium:
+
+```math
+\mathcal{M}^* = \bigl\{(e,\dot{\theta},\tilde{m}_p) :\; s = 0,\; e = 0,\; \tilde{m}_p = 0 \bigr\}
+```
+
+By **LaSalle's Invariance Principle**, every trajectory starting in $\Omega_c$ converges to $\mathcal{M}^*$:
+
+```math
+e(t) \to 0, \quad \dot{\theta}(t) \to 0, \quad \tilde{m}_p(t) \to 0 \quad \text{as} \quad t \to \infty \qquad 
+```
 
 ---
+
 ## 5. Algorithm Listing
 
 The control algorithm executed at each time step $t$:
 
-1. **Read State:** Obtain current $\theta(t)$ and $\dot{\theta}(t)$.
+1. **Read State:** Obtain current $\theta(t)$, $\dot{\theta}(t)$, and current estimate $\hat{m}_p(t)$.
 2. **Compute Error:** $e = \theta - \theta_d$.
-3. **Compute Nominal Dynamics Matrices:** Calculate $M_0(\theta)$, $C_0(\theta,\dot{\theta})$, $G_0(\theta)$.
-4. **Compute Regressor Matrices:** Calculate $M_p(\theta)$, $C_p(\theta,\dot{\theta})$, $G_p(\theta)$.
-5. **Compute Regressor Vector:**
+3. **Compute Reference Values:**
 
 ```math
-Y = M_p(\theta)\,\ddot{\theta} + C_p(\theta,\dot{\theta})\,\dot{\theta} + G_p(\theta)
+\dot{\theta}_r = -\lambda\, e, \qquad \ddot{\theta}_r = -\lambda\, \dot{\theta}
 ```
 
-6. **Update Estimate:**
+4. **Compute Filtered Error:** $s = \dot{\theta} - \dot{\theta}_r = \dot{\theta} + \lambda\, e$.
+5. **Compute Nominal Dynamics at Reference:**
 
 ```math
-\hat{m}_u(t + \Delta t) = \hat{m}_u(t) - \Delta t \cdot \gamma\,\dot{\theta}^T Y
+\tau_0 = M_0(\theta)\,\ddot{\theta}_r + C_0(\theta,\dot{\theta})\,\dot{\theta}_r + G_0(\theta)
 ```
 
-7. **Compute Control Input:**
+6. **Compute Payload Regressor:**
 
 ```math
-a(t) = -k_1 e - k_2 \dot{\theta} + G_0(\theta) + \hat{m}_u\, Y
+Y_p = M_p(\theta)\,\ddot{\theta}_r + C_p(\theta,\dot{\theta})\,\dot{\theta}_r + G_p(\theta)
 ```
 
-8. **Apply Torque:** Apply $a(t)$ to the plant.
-9. **Integrate Dynamics:** Solve
+7. **Update Estimate (Euler step):**
+
+```math
+\hat{m}_p(t + \Delta t) = \hat{m}_p(t) - \Delta t\cdot\alpha\, Y_p^T s
+```
+
+8. **Compute Control Input:**
+
+```math
+a(t) = \tau_0 + \hat{m}_p\, Y_p - k_d\, s
+```
+
+9. **Apply Torque:** Apply $a(t)$ to the plant.
+10. **Integrate Dynamics:** Solve
 
 ```math
 \ddot{\theta} = M(\theta)^{-1}\bigl(a - C(\theta,\dot{\theta})\dot{\theta} - G(\theta)\bigr)
 ```
 
-to update the state for $t + \Delta t$, where $M = M_0 + m_u M_p$ and $G = G_0 + m_u G_p$ use the **true** (unknown) mass in the simulation only.
+to update the state for $t + \Delta t$, where $M$, $C$, $G$ use the **true** (unknown to the controller) $m_p$ in the simulation.
 
 ---
 
@@ -548,16 +523,19 @@ to update the state for $t + \Delta t$, where $M = M_0 + m_u M_p$ and $G = G_0 +
 
 | Parameter | Value | Description |
 |---|---|---|
-| **Initial State** | $\theta=[\pi, 0],\; \dot{\theta}=[0,0]$ | Arm starts pointing left, stationary. |
-| **Target State** | $\theta_d=[\pi/2, 0]$ | Target is vertical (upright). |
-| **Grasp Time** | $t_{\text{grasp}} = 1.0$ s | Payload attached at $t=1$ s. |
-| **True Payload Mass** | $m_u = 1.5$ kg | Unknown to the controller. |
-| **Simulation Time** | 15 seconds | Longer to capture adaptation transient. |
-| **Controller Gains** | $k_1=100,\; k_2=20$ | Same as Project 1 for fair comparison. |
-| **Adaptation Gain** | $\gamma = 5.0$ | Controls speed of parameter estimation. |
-| **Initial Estimate** | $\hat{m}_u(0) = 0$ | Controller starts with no payload knowledge. |
+| **Initial State** | $\theta=[\pi,\,0],\; \dot{\theta}=[0,0]$ | Arm starts pointing left, stationary. |
+| **Target State** | $\theta_d=[0.9,\,-0.45]\;\mathrm{rad}$ | Arbitrary non-trivial target configuration. |
+| **True Payload Mass** | $m_p = 3.0$ kg | Unknown to the controller. |
+| **Simulation Time** | 8 seconds | Sufficient to capture the adaptation transient. |
+| **Baseline Gains** | $k_1=90,\; k_2=28$ | PD gains for non-adaptive reference controller. |
+| **Filtered-Error Gain** | $\lambda = 4.0$ | Sets the bandwidth of the filtered error. |
+| **Damping Gain** | $k_d = 80.0$ | Dissipation term in the adaptive control law. |
+| **Adaptation Gain** | $\alpha = 0.03$ | Controls speed of payload-mass estimation. |
+| **Initial Estimate** | $\hat{m}_p(0) = 5.0$ kg | Controller starts with an overestimate of the true mass. |
 
-**Choice of initial state:** the arm starts far from the target ($\theta_1=\pi$ means pointing left, target is $\theta_1=\pi/2$ pointing up), producing a large initial error that tests the controller on a challenging configuration. The payload is introduced at $t = 1$ s after a brief initial transient, to clearly isolate the adaptation response from the initial stabilization phase.
+**Choice of initial state:** the arm starts far from the target ($\theta_1 = \pi$ means pointing left), producing a large initial error that tests the controller on a challenging configuration.
+
+**Choice of initial estimate:** starting above the true value ($5.0 > 3.0$ kg) is an intentionally pessimistic initialization to demonstrate that the estimator converges downward toward the truth.
 
 ---
 
@@ -570,14 +548,13 @@ to update the state for $t + \Delta t$, where $M = M_0 + m_u M_p$ and $G = G_0 +
 </p>
 
 <p align="center">
-  <em>Figure 2: Comparison of joint angles, tracking errors, control torques, and payload estimate for the adaptive controller (green) and the non-adaptive Lyapunov controller from Project 1 (blue). Dashed vertical line at t=1 s marks the grasp event.</em>
+  <em>Figure 2: Comparison of joint angles (top), tracking errors (middle), and control torques (bottom) for the adaptive controller (blue solid) and non-adaptive baseline (orange dashed).</em>
 </p>
 
 **Interpretation of Figure 2**
 
-- **Joint Angles and Errors (Top/Middle Rows):** Both controllers perform identically before $t=1$ s, as expected — the plant is the same. After grasping, the non-adaptive controller converges to a wrong equilibrium: the error settles at a constant nonzero value that matches the prediction $e^* = \frac{m_u}{k_1}G_p(\theta_d)$ from Section 4.1. The adaptive controller shows a brief transient as the estimator adjusts, then fully recovers and converges to $\theta_d$ with zero error.
-- **Control Torques (Third Row):** The adaptive controller requires slightly larger torques during the adaptation transient. The non-adaptive controller produces smooth torques but holds the arm at the wrong position permanently.
-- **Payload Estimate (Bottom Row):** $\hat{m}_u(t)$ starts at zero, remains zero until grasping (the arm is at rest so $Y = G_p$ and $\dot\theta^T Y \approx 0$), then increases as the arm responds to the load and converges toward the true value $m_u = 1.5$ kg.
+- **Joint Angles and Errors (Top/Middle Rows):** Both controllers start from the same initial configuration. The non-adaptive controller converges to a wrong equilibrium — the steady-state error matches the theoretical prediction $e^* = \frac{m_p}{k_1}G_p(\theta_d)$ from Section 4.1. The adaptive controller shows a transient as the estimator adjusts, then fully recovers and converges to $\theta_d$ with zero error.
+- **Control Torques (Bottom Row):** The adaptive controller requires larger torques during the estimation transient because it must compensate for the large initial error in the payload estimate ($\hat{m}_p(0) = 5.0 > m_p = 3.0$). After convergence, the torques settle to the values needed to hold the correct equilibrium. The non-adaptive controller produces smooth torques but holds the arm permanently at the wrong position.
 
 ### 7.2 Lyapunov Function Evolution
 
@@ -586,28 +563,62 @@ to update the state for $t + \Delta t$, where $M = M_0 + m_u M_p$ and $G = G_0 +
 </p>
 
 <p align="center">
-  <em>Figure 3: Time evolution of the augmented Lyapunov function L_c(t) (blue) and its derivative L̇_c(t) (red) for the adaptive controller.</em>
+  <em>Figure 3: Time evolution of the augmented Lyapunov function L<sub>c</sub>(t) (blue) and its ideal time derivative dL<sub>c</sub>/dt = &minus;k<sub>d</sub>&#x2016;s&#x2016;&sup2; (red) for the adaptive controller.</em>
 </p>
 
 **Interpretation of Figure 3**
 
-- **$L_c(t)$ (Blue):** Decreases monotonically throughout the simulation, including after the grasp event at $t=1$ s. This confirms the theoretical result that $\dot{L}_c \leq 0$ at all times. The brief plateau at $t=1$ s reflects the sudden increase in $\tilde{m}_u^2$ when the payload is attached and $\hat{m}_u$ still equals zero; $L_c$ resumes decreasing immediately as adaptation begins.
-- **$\dot{L}_c(t)$ (Red):** Remains non-positive at all times, consistent with equation (16). The initial large negative value corresponds to the rapid dissipation of kinetic energy from the initial configuration; the smaller dip at $t=1$ s corresponds to the new transient driven by the payload.
+- **$L_c(t)$ (Blue):** Decreases monotonically throughout the simulation, confirming the theoretical result $\dot{L}_c \leq 0$ at all times. The initial value is large because of the large initial position error and the overestimated payload ($\tilde{m}_p(0) = \hat{m}_p(0) - m_p = +2.0$ kg).
+- **$\dot{L}_c(t)$ (Red):** Remains non-positive at all times, consistent with equation (18). The initial large negative value corresponds to the rapid dissipation of kinetic energy when the arm begins moving from the far initial configuration.
 
-### 7.3 Phase Portrait
+### 7.3 Parameter Estimation
+
+<p align="center">
+  <img src="figures/parameter_estimation.png" alt="Parameter Estimation" width="700"/>
+</p>
+
+<p align="center">
+  <em>Figure 4: Online payload-mass estimate m&#x0302;<sub>p</sub>(t) (blue) converging toward the true value m<sub>p</sub> = 3.0 kg (green dashed).</em>
+</p>
+
+**Interpretation of Figure 4**
+
+- The estimate starts at $\hat{m}_p(0) = 5.0$ kg — above the true value — and decreases as the arm moves and the regressor $Y_p$ is excited.
+- Convergence is driven by the transient motion: while $s \neq 0$, the adaptation law $\dot{\hat{m}}_p = -\alpha Y_p^T s$ continuously corrects the estimate.
+- Once the arm reaches the target and $s \to 0$, the adaptation effectively stops and $\hat{m}_p$ holds at a value close to the true $m_p = 3.0$ kg.
+- The convergence rate is governed by $\alpha$ and the magnitude of $Y_p^T s$; a larger $\alpha$ produces faster estimation but can amplify measurement noise.
+
+### 7.4 Payload Gravity Compensation
+
+<p align="center">
+  <img src="figures/payload_compensation.png" alt="Payload Compensation" width="700"/>
+</p>
+
+<p align="center">
+  <em>Figure 5: True payload gravitational torque m<sub>p</sub> G<sub>p,i</sub>(&theta;) (grey) vs. the estimated compensation m&#x0302;<sub>p</sub> G<sub>p,i</sub>(&theta;) (purple dashed) for each joint.</em>
+</p>
+
+**Interpretation of Figure 5**
+
+- At $t = 0$, the estimated compensation (purple) overestimates the true payload torque (grey) because $\hat{m}_p(0) = 5.0 > 3.0$ kg.
+- As the estimator converges, the two curves progressively align, confirming that the adaptive controller learns to cancel exactly the gravity contribution of the unknown load.
+- This plot isolates the gravity-compensation channel, which is the dominant correction term at low velocities near the target.
+
+### 7.5 Phase Portrait
 
 <p align="center">
   <img src="figures/phase_portrait.png" alt="Phase Portrait" width="850"/>
 </p>
 
 <p align="center">
-  <em>Figure 4: Phase portraits for Joint 1 (left) and Joint 2 (right), showing trajectories for the adaptive controller (green) and the non-adaptive controller (blue). Red star marks the true target; blue cross marks the wrong equilibrium of the non-adaptive controller.</em>
+  <em>Figure 6: Phase portraits for Joint 1 (left) and Joint 2 (right), showing trajectories for the adaptive controller (blue) and the non-adaptive baseline (orange dashed). Red star marks the true target; green dot marks the initial state.</em>
 </p>
 
-**Interpretation of Figure 4**
+**Interpretation of Figure 6**
 
-- The adaptive controller (green) spirals inward and converges to the true target $\theta_d$ (red star), characteristic of a stable, well-damped second-order system.
-- The non-adaptive controller (blue) also spirals inward but converges to a **displaced equilibrium** (blue cross) that is offset from the target by the uncompensated gravity load. The offset is visible as a separate attractor in both phase portraits.
+- The adaptive controller (blue) spirals inward and converges to the true target $\theta_d$ (red star), characteristic of a stable, well-damped second-order system.
+- The non-adaptive controller (orange) also spirals inward but converges to a **displaced equilibrium** that is visibly offset from the target. The offset matches the steady-state error $e^* = \frac{m_p}{k_1}G_p(\theta_d)$ predicted in Section 4.1.
+- The adaptive trajectory shows a wider initial excursion due to the large initial estimation error, then tightens as the estimate improves.
 
 ---
 
@@ -615,36 +626,50 @@ to update the state for $t + \Delta t$, where $M = M_0 + m_u M_p$ and $G = G_0 +
 
 #### 8.1 Necessity of Adaptation
 
-The non-adaptive Lyapunov controller from Project 1 fails in a structural way when the payload is unknown: it converges to the wrong position, and the steady-state error grows linearly with $m_u$. This failure cannot be fixed by retuning $k_1$ or $k_2$. The adaptive controller eliminates this failure by learning $m_u$ online and correcting the gravity compensation term in real time.
+The non-adaptive Lyapunov controller from Project 1 fails in a **structural** way when the payload is unknown: it converges to the wrong position, and the steady-state error grows linearly with $m_p$. This failure cannot be fixed by retuning $k_1$ or $k_2$. The adaptive controller eliminates this failure by learning $m_p$ online and correcting the gravity compensation term in real time.
 
 #### 8.2 What the Adaptive Controller Guarantees
 
 The adaptive scheme provides:
 
-- **Lyapunov stability:** $L_c(t)$ is non-increasing, so $e$, $\dot\theta$, and $\tilde{m}_u$ remain bounded for all time.
-- **Asymptotic state convergence:** $e(t) \to 0$ and $\dot\theta(t) \to 0$ as $t \to \infty$, proven via Barbalat's Lemma.
-- **Asymptotic parameter convergence:** $\hat{m}_u(t) \to m_u$ as $t \to \infty$, by LaSalle's Invariance Principle.
+- **Lyapunov stability:** $L_c(t)$ is non-increasing, so $s(t)$, $e(t)$, and $\tilde{m}_p(t)$ remain bounded for all time.
+- **Asymptotic state convergence:** $e(t) \to 0$ and $\dot\theta(t) \to 0$ as $t \to \infty$, proven via LaSalle's Invariance Principle (Section 4.2).
+- **Asymptotic parameter convergence:** $\hat{m}_p(t)$ converges toward $m_p$, with convergence rate governed by the excitation of $Y_p$ during the motion transient.
 
-#### 8.3 Practical Implications
+#### 8.3 Role of the Filtered Error
 
-1. **Model Structure vs. Model Parameters:** The adaptive controller requires knowing the structure of how $m_u$ enters the dynamics (the regressors $M_p$, $C_p$, $G_p$) but not the value of $m_u$ itself. This is a strictly weaker requirement than what Project 1 needed.
-2. **Adaptation Gain $\gamma$:** A larger $\gamma$ speeds up estimation but can amplify sensor noise in the regressor signal. In practice, $\gamma$ must be tuned against noise levels.
-3. **Regressor Computation:** The adaptation law (15) requires computing $\ddot\theta$, typically obtained by differentiating $\dot\theta$. Noise in this signal is the main practical limitation and motivates the use of observers or low-pass filtering.
+The filtered error $s = \dot\theta + \lambda e$ serves a dual purpose:
+1. It drives both the control torque ($-k_d s$) and the parameter update ($-\alpha Y_p^T s$) from a single signal.
+2. It guarantees exponential convergence of $e$ whenever $s \to 0$, without requiring separate proportional-feedback and integral terms.
+
+#### 8.4 Practical Implications
+
+1. **Model Structure vs. Model Parameters:** the adaptive controller requires knowing the structure of how $m_p$ enters the dynamics (the regressors $M_p$, $C_p$, $G_p$) but not the value of $m_p$ itself. This is a strictly weaker requirement than the full-knowledge assumption in Project 1.
+2. **Adaptation Gain $\alpha$:** a larger $\alpha$ speeds up estimation but can amplify sensor noise in the regressor signal. Tuning $\alpha$ requires balancing convergence speed against noise sensitivity.
+3. **Filtered-Error Gain $\lambda$:** a larger $\lambda$ accelerates position convergence when $s \to 0$, but also makes $s$ more sensitive to velocity noise. It directly sets the closed-loop bandwidth of the position loop.
+4. **Regressor Computation:** the adaptation law (17) uses only measured $\theta$, $\dot\theta$ — no direct acceleration measurement is needed, because $\ddot\theta_r = -\lambda\dot\theta$ is computed from the measured velocity.
+
+#### 8.5 Limitations
+
+- **Parameter convergence is not guaranteed in general.** The LaSalle proof shows $\hat{m}_p \to m_p$ only because $G_p(\theta_d) \neq 0$ at the specific target. For targets where the payload gravity regressor vanishes (e.g., a purely horizontal arm with $\theta_1 = \theta_2 = 0$), the estimator may stall at an incorrect value while position convergence is still achieved. Persistent excitation (PE) of the regressor is required for guaranteed parameter convergence.
+- **Unconstrained torques.** No actuator saturation is modeled. Real motors have torque limits; large initial estimation errors (here $\tilde{m}_p(0) = +2.0$ kg) cause large transient torques that may not be physically realizable.
+- **Single unknown parameter.** The method as implemented estimates only $m_p$. Link masses, friction, and structural flexibility are assumed perfectly known. Extending to a full parameter vector would require a matrix-valued regressor and a corresponding gain matrix $\Gamma$.
+- **Noise sensitivity of the regressor.** $Y_p$ contains $\ddot\theta_r = -\lambda\dot\theta$; velocity noise is amplified by $\lambda$. In practice, velocity must be filtered, which introduces phase lag and degrades the adaptation rate.
+- **Constant payload assumption.** The analysis assumes $\dot{m}_p = 0$. Slowly varying or switching payloads would require a modified adaptation law (e.g., leakage or $\sigma$-modification) to remain stable.
 
 ---
 
 ## 9. Project Structure
 
 ```text
-project_2_mass/
-├── README_project2.md
+project_2_Adaptive_Lyapunov-Based_Control_Two-Link_Robot_Unknown_Payload/
+├── README.md
 ├── requirements.txt
 ├── main.py
 ├── configs/
 │   └── params.yaml
-├── scripts/
-│   └── random_search_params.py
 ├── src/
+│   ├── __init__.py
 │   ├── system.py
 │   ├── adaptive_controller.py
 │   ├── controller.py
@@ -652,9 +677,9 @@ project_2_mass/
 │   ├── simulation.py
 │   └── visualization.py
 ├── figures/
+│   ├── manipulator_model.png
 │   ├── comparison_plots.png
 │   ├── lyapunov_function.png
-│   ├── manipulator_model.png
 │   ├── parameter_estimation.png
 │   ├── payload_compensation.png
 │   └── phase_portrait.png
@@ -668,15 +693,22 @@ project_2_mass/
 
 ```bash
 pip install -r requirements.txt
-python3 main.py
+python main.py
 ```
 
-This runs both controllers on the same loaded manipulator and regenerates all figures and the animation.
+This runs both the adaptive and non-adaptive controllers on the same loaded manipulator and regenerates all figures and the animation.
+
+
 
 ---
 
 ## 11. References
 
-1. Slotine, J.-J. E., & Li, W. (1991). *Applied Nonlinear Control*. Prentice Hall.
-2. Baccouch, M., & Dodds, S. (2020). *A two-link robot manipulator: Simulation and control design*. International Journal of Robotic Engineering, 5(2), 1-17.
-3. Osinenko, P. (2026). *Essentials of Adaptive Control*. Lecture Notes.
+1. Baccouch, M., & Dodds, S. (2020). *A two-link robot manipulator: Simulation and control design*. International Journal of Robotic Engineering, 5(2), 1–17.
+2. Slotine, J.-J. E., & Li, W. (1987). *On the adaptive control of robot manipulators*. The International Journal of Robotics Research, 6(3), 49–59.
+
+---
+
+## 12. Note on AI Usage
+
+AI was used to help check the final code for correctness, to structure files, and to verify the documentation and visualisation.

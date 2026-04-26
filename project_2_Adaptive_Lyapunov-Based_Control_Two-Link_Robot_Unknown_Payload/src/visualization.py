@@ -2,7 +2,7 @@
 Visualization utilities for Project 2.
 
 The plots focus on the adaptive payload-mass estimator described in the README:
-closed-loop trajectories, composite Lyapunov decay, parameter estimates,
+closed-loop trajectories,  Lyapunov decay, parameter estimates,
 payload compensation, phase portraits, and robot animation.
 """
 
@@ -89,14 +89,14 @@ def plot_comparison(
 
 
 def plot_lyapunov(times, L_vals, dL_vals, save_dir="figures"):
-    """Plot the composite Lyapunov function and its derivative."""
+    """Plot the Lyapunov function and its derivative."""
     _ensure_dir(save_dir)
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
 
     ax1.plot(times, L_vals, color="tab:blue")
     ax1.set_ylabel(r"$L_c(t)$")
-    ax1.set_title("Composite Lyapunov function")
+    ax1.set_title("Lyapunov function")
 
     ax2.plot(times, dL_vals, color="tab:red")
     ax2.axhline(0.0, color="k", ls="--", lw=0.8)
@@ -202,43 +202,6 @@ def plot_phase_portrait(
     fig.savefig(path)
     plt.close(fig)
     print(f"  Saved {path}")
-
-
-def plot_manipulator_model(l1, l2, initial_theta, theta_d, true_payload_mass, save_dir="figures"):
-    """Create a simple schematic of the two-link manipulator for the README."""
-    _ensure_dir(save_dir)
-
-    x, y = _joint_positions(initial_theta, l1, l2)
-    xd, yd = _joint_positions(theta_d, l1, l2)
-    lim = (l1 + l2) * 1.25
-
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.plot(x, y, "o-", color="tab:blue", lw=3, ms=8, label="initial")
-    ax.plot(xd, yd, "o--", color="tab:red", lw=2, ms=7, alpha=0.65, label="target")
-    ax.plot(0.0, 0.0, "ko", ms=6)
-    ax.plot(x[2], y[2], "s", color="tab:green", ms=10, label="payload")
-
-    ax.annotate(
-        rf"$m_p={true_payload_mass:.1f}\,\mathrm{{kg}}$",
-        xy=(x[2], y[2]),
-        xytext=(-0.65 * lim, -0.45 * lim),
-        arrowprops={"arrowstyle": "->", "lw": 1.2},
-    )
-
-    ax.set_xlim(-lim, lim)
-    ax.set_ylim(-lim, lim)
-    ax.set_aspect("equal")
-    ax.set_xlabel("x [m]")
-    ax.set_ylabel("y [m]")
-    ax.set_title("Two-link manipulator carrying an unknown payload")
-    ax.legend(loc="upper right")
-
-    fig.tight_layout()
-    path = os.path.join(save_dir, "manipulator_model.png")
-    fig.savefig(path)
-    plt.close(fig)
-    print(f"  Saved {path}")
-
 
 def create_animation(
     times,

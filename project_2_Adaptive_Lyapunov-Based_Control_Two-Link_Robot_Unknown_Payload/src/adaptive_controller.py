@@ -1,7 +1,7 @@
 """
 Adaptive Lyapunov controller with online payload-mass estimation.
 
-The controller uses the Slotine-Li filtered error
+The controller uses a filtered error
     s = dtheta + lambda * (theta - theta_d)
 and a certainty-equivalence model of the object held at the end effector.
 Only the scalar payload mass is estimated online.

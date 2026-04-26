@@ -19,7 +19,6 @@ from src.visualization import (
     create_animation,
     plot_comparison,
     plot_lyapunov,
-    plot_manipulator_model,
     plot_parameter_estimation,
     plot_payload_compensation,
     plot_phase_portrait,
@@ -130,7 +129,6 @@ def main():
     plot_parameter_estimation(t_adaptive, estimates, true_payload_mass)
     plot_payload_compensation(t_adaptive, states_adaptive, estimates, true_payload_mass, robot)
     plot_phase_portrait(t_adaptive, states_adaptive, theta_d, baseline_states=states_baseline)
-    plot_manipulator_model(rp["l1"], rp["l2"], x0[:2], theta_d, true_payload_mass)
 
     print("Creating animation ...")
     create_animation(
@@ -143,27 +141,6 @@ def main():
         true_payload_mass=true_payload_mass,
         baseline_states=states_baseline,
     )
-
-    # --- summary ---
-    err_adaptive = np.linalg.norm(states_adaptive[:, :2] - theta_d, axis=1)
-    err_baseline = np.linalg.norm(states_baseline[:, :2] - theta_d, axis=1)
-    final_err_adaptive = err_adaptive[-1]
-    final_err_baseline = err_baseline[-1]
-    error_index_2s = np.searchsorted(t_adaptive, 2.0)
-    print("\n===== Results Summary =====")
-    print(f"  True payload mass:                m_p = {true_payload_mass:.4f} kg")
-    print(f"  Final adaptive estimate:          hat_m_p = {estimates[-1, 0]:.4f} kg")
-    print(f"  Adaptive IAE:                      {integral_error(t_adaptive, err_adaptive):.4f} rad*s")
-    print(f"  Non-adaptive IAE:                  {integral_error(t_baseline, err_baseline):.4f} rad*s")
-    print(f"  Adaptive settling time (<0.02 rad):     {settling_time(t_adaptive, err_adaptive):.2f} s")
-    print(f"  Non-adaptive settling time (<0.02 rad): {settling_time(t_baseline, err_baseline):.2f} s")
-    print(f"  Adaptive error at 2 s:             {err_adaptive[error_index_2s]:.6f} rad")
-    print(f"  Non-adaptive error at 2 s:         {err_baseline[error_index_2s]:.6f} rad")
-    print(f"  Adaptive final position error:     {final_err_adaptive:.6f} rad")
-    print(f"  Non-adaptive final position error: {final_err_baseline:.6f} rad")
-    print(f"  Adaptive max |torque|:             {np.max(np.abs(torques_adaptive)):.2f} N*m")
-    print(f"  Non-adaptive max |torque|:         {np.max(np.abs(torques_baseline)):.2f} N*m")
-    print("\nDone. Check figures/ and animations/ folders.")
 
 
 if __name__ == "__main__":

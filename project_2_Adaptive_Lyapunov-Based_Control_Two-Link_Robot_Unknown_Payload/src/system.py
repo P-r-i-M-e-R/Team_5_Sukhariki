@@ -124,7 +124,7 @@ class TwoLinkManipulator:
         return self.link_gravity_vector(theta) + self.payload_mass * self.payload_gravity_regressor(theta)
 
     # ------------------------------------------------------------------
-    # State derivative (for ODE solvers)
+    # State derivative
     # ------------------------------------------------------------------
 
     def dynamics(self, t: float, state: np.ndarray, a: np.ndarray) -> np.ndarray:

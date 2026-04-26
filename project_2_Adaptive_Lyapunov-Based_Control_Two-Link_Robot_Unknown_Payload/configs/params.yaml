@@ -29,7 +29,7 @@ baseline:
   k1: 90.0
   k2: 28.0
 
-# Adaptive Slotine-Li controller gains.
+# Adaptive controller gains.
 adaptive_control:
   lambda: 4.0
   kd: 80.0
@@ -40,13 +40,3 @@ adaptive:
   alpha: 0.03
   initial_payload_mass_hat: 5.0
 
-# Legacy PID controller gains from Project 1 experiments.
-# Kept for optional experimentation; main.py uses the adaptive and baseline
-# controllers above.
-pid:
-  kp1: 30.0
-  ki1: 20.0
-  kd1: 15.0
-  kp2: 30.0
-  ki2: 20.0
-  kd2: 10.0
