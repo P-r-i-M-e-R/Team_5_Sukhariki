@@ -407,67 +407,9 @@ Substituting (17) into (16):
 \dot{L}_c = -k_d\|s\|^2 \leq 0 \qquad \text{(18)}
 ```
 
-#### Stability by LaSalle's Invariance Principle
+**Stability via LaSalle's Invariance Principle.**
 
-**Step 1: Boundedness of all signals.**
-
-From (18): $L_c(t) \leq L_c(0) < \infty$ for all $t \geq 0$. Since $M(\theta)$ is uniformly positive definite with minimum eigenvalue $\lambda_{\min}(M) > 0$:
-
-```math
-\frac{\lambda_{\min}(M)}{2}\|s\|^2 \;\leq\; \frac{1}{2}s^T M s \;\leq\; L_c(0), \qquad \frac{1}{2\alpha}\tilde{m}_p^2 \;\leq\; L_c(0)
-```
-
-Therefore $s(t)$, $\tilde{m}_p(t)$, and hence $\hat{m}_p(t)$, $e(t)$, $\dot{\theta}(t)$ are all **bounded** for all $t \geq 0$.
-
-**Step 2: Definition of the invariant set.**
-
-Since $\dot{L}_c = -k_d\|s\|^2 \leq 0$, the level set $\Omega_c = \{L_c \leq L_c(0)\}$ is positively invariant. Define the subset where $\dot{L}_c$ vanishes:
-
-```math
-\mathcal{E} = \bigl\{(e,\dot{\theta},\tilde{m}_p) : \dot{L}_c = 0 \bigr\} = \bigl\{(e,\dot{\theta},\tilde{m}_p) : s = 0 \bigr\}
-```
-
-**Step 3: Analysis of trajectories confined to $\mathcal{E}$.**
-
-Consider any trajectory satisfying $s(t) \equiv 0$ for all $t \geq t_0$. Then $\dot{s}(t) \equiv 0$ as well. Two consequences follow immediately:
-
-**(a) Parameter estimate is frozen.** From the adaptation law (17):
-
-```math
-\dot{\hat{m}}_p = -\alpha\, Y_p^T s = 0 \qquad \Rightarrow \qquad \tilde{m}_p = \mathrm{const}
-```
-
-**(b) Residual dynamics vanish.** Substituting $s \equiv 0$ and $\dot{s} \equiv 0$ into the closed-loop equation (14):
-
-```math
-M\cdot 0 + C\cdot 0 = \tilde{m}_p\, Y_p - k_d\cdot 0 \qquad \Rightarrow \qquad \tilde{m}_p\, Y_p = 0
-```
-
-With $s \equiv 0$: $\dot{\theta} = -\lambda e$, so $\dot{e} = \dot{\theta} = -\lambda e$, giving $e(t) = e_0\,e^{-\lambda t} \to 0$. The regressor at reference values therefore satisfies:
-
-```math
-Y_p = \lambda^2 M_p(\theta)\,e \;-\; \lambda\, C_p(\theta,\dot{\theta})\,e \;+\; G_p(\theta) \;\xrightarrow[t\to\infty]{}\; G_p(\theta_d)
-```
-
-For any non-degenerate target configuration, $G_p(\theta_d) \neq 0$. Since $\tilde{m}_p$ is constant and $Y_p \to G_p(\theta_d) \neq 0$, the condition $\tilde{m}_p\, Y_p = 0$ can only be satisfied if:
-
-```math
-\tilde{m}_p = 0
-```
-
-**Step 4: Largest invariant set and conclusion.**
-
-The largest invariant set contained in $\mathcal{E}$ is the single equilibrium:
-
-```math
-\mathcal{M}^* = \bigl\{(e,\dot{\theta},\tilde{m}_p) :\; s = 0,\; e = 0,\; \tilde{m}_p = 0 \bigr\}
-```
-
-By **LaSalle's Invariance Principle**, every trajectory starting in $\Omega_c$ converges to $\mathcal{M}^*$:
-
-```math
-e(t) \to 0, \quad \dot{\theta}(t) \to 0, \quad \tilde{m}_p(t) \to 0 \quad \text{as} \quad t \to \infty \qquad 
-```
+Since $\dot{L}_c = -k_d\|s\|^2 \leq 0$, the function $L_c(t)$ is non-increasing and all signals $s$, $\tilde{m}_p$, $e$ remain bounded for all $t \geq 0$. Consider the set where $\dot{L}_c$ vanishes: $\{s = 0\}$. On any trajectory confined to this set, $s(t) \equiv 0$ and therefore $\dot{s}(t) \equiv 0$. Three consequences follow: (i) the adaptation law gives $\dot{\hat{m}}_p = -\alpha Y_p^T s = 0$, so $\tilde{m}_p$ is constant; (ii) substituting $s \equiv 0$ and $\dot{s} \equiv 0$ into the closed-loop equation reduces it to $\tilde{m}_p Y_p = 0$; (iii) from $s = 0$ we have $\dot{e} = -\lambda e$, so $e(t) \to 0$ exponentially and the regressor converges to $Y_p \to G_p(\theta_d) \neq 0$, since the payload gravity term is non-zero at any non-degenerate target configuration. Combining (i)–(iii): $\tilde{m}_p$ is constant, $Y_p \to G_p(\theta_d) \neq 0$, and $\tilde{m}_p Y_p = 0$ must hold, which forces $\tilde{m}_p = 0$. Therefore the largest invariant set contained in $\{s = 0\}$ is the single equilibrium $\{s=0,\, e=0,\, \tilde{m}_p=0\}$, and by LaSalle's Invariance Principle every trajectory converges to it: $e(t)\to 0$, $\dot\theta(t)\to 0$, $\tilde{m}_p(t)\to 0$ as $t\to\infty$. $\blacksquare$
 
 ---
 
