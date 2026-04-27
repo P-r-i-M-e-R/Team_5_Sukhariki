@@ -245,7 +245,7 @@ When the payload is absent ($m_p = 0$), substituting (4) into (1) gives the clos
 M_0\,\ddot{\theta} + C_0\,\dot{\theta} + k_2\dot{\theta} + k_1 e = 0 \qquad \text{(5)}
 ```
 
-The Lyapunov function $L = \tfrac{1}{2}\dot{\theta}^T M_0 \dot{\theta} + \tfrac{1}{2}k_1 e^T e$ satisfies $\dot{L} = -k_2\|\dot{\theta}\|^2 \leq 0$, and by LaSalle's Invariance Principle, $e(t)\to 0$ and $\dot{\theta}(t)\to 0$.
+The Lyapunov function $L = \tfrac{1}{2}\dot{\theta}^T M_0 \dot{\theta} + \tfrac{1}{2}k_1 e^T e$ satisfies $\dot{L} = -k_2\|\dot{\theta}\|^2 \leq 0$, and by LaSalle's Invariance Principle, $e(t)\to 0$ and $\dot{\theta}(t)\to 0$. [described in project 1](https://github.com/P-r-i-M-e-R/Team_5_Sukhariki/blob/main/project_1_lyapunov_control_two-linked_manipulator/README.md)
 
 #### Failure When $m_p \neq 0$
 
