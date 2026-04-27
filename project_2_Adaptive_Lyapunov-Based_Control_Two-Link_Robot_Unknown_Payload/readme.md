@@ -409,7 +409,16 @@ Substituting (17) into (16):
 
 **Stability via LaSalle's Invariance Principle.**
 
-Since $\dot{L}_c = -k_d\|s\|^2 \leq 0$, the function $L_c(t)$ is non-increasing and all signals $s$, $\tilde{m}_p$, $e$ remain bounded for all $t \geq 0$. Consider the set where $\dot{L}_c$ vanishes: $\{s = 0\}$. On any trajectory confined to this set, $s(t) \equiv 0$ and therefore $\dot{s}(t) \equiv 0$. Three consequences follow: (i) the adaptation law gives $\dot{\hat{m}}_p = -\alpha Y_p^T s = 0$, so $\tilde{m}_p$ is constant; (ii) substituting $s \equiv 0$ and $\dot{s} \equiv 0$ into the closed-loop equation reduces it to $\tilde{m}_p Y_p = 0$; (iii) from $s = 0$ we have $\dot{e} = -\lambda e$, so $e(t) \to 0$ exponentially and the regressor converges to $Y_p \to G_p(\theta_d) \neq 0$, since the payload gravity term is non-zero at any non-degenerate target configuration. Combining (i)–(iii): $\tilde{m}_p$ is constant, $Y_p \to G_p(\theta_d) \neq 0$, and $\tilde{m}_p Y_p = 0$ must hold, which forces $\tilde{m}_p = 0$. Therefore the largest invariant set contained in $\{s = 0\}$ is the single equilibrium $\{s=0,\, e=0,\, \tilde{m}_p=0\}$, and by LaSalle's Invariance Principle every trajectory converges to it: $e(t)\to 0$, $\dot\theta(t)\to 0$, $\tilde{m}_p(t)\to 0$ as $t\to\infty$. $\blacksquare$
+Since $\dot{L}_c = -k_d\|s\|^2 \leq 0$, the function $L_c(t)$ is non-increasing and all signals $s$, $\tilde{m}_p$, $e$ remain bounded for all $t \geq 0$. 
+Consider the set where $\dot{L}_c$ vanishes: $\{s = 0\}$. On any trajectory confined to this set, $s(t) \equiv 0$ and therefore $\dot{s}(t) \equiv 0$. 
+
+Three consequences follow: 
+(i) the adaptation law gives $\dot{\hat{m}}_p = -\alpha Y_p^T s = 0$, so $\tilde{m}_p$ is constant; 
+(ii) substituting $s \equiv 0$ and $\dot{s} \equiv 0$ into the closed-loop equation reduces it to $\tilde{m}_p Y_p = 0$; 
+(iii) from $s = 0$ we have $\dot{e} = -\lambda e$, so $e(t) \to 0$ exponentially and the regressor converges to $Y_p \to G_p(\theta_d) \neq 0$, since the payload gravity term is non-zero at any non-degenerate target configuration. 
+
+Combining (i)–(iii): $\tilde{m}_p$ is constant, $Y_p \to G_p(\theta_d) \neq 0$, and $\tilde{m}_p Y_p = 0$ must hold, which forces $\tilde{m}_p = 0$. 
+Therefore the largest invariant set contained in $\{s = 0\}$ is the single equilibrium $\{s=0,\, e=0,\, \tilde{m}_p=0\}$, and by LaSalle's Invariance Principle every trajectory converges to it: $e(t)\to 0$, $\dot\theta(t)\to 0$, $\tilde{m}_p(t)\to 0$ as $t\to\infty$. $\blacksquare$
 
 ---
 
