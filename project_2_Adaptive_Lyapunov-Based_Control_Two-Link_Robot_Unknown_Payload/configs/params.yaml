@@ -14,7 +14,7 @@ robot:
 # Simulation settings
 simulation:
   t_start: 0.0
-  t_end:   20.0
+  t_end:   10.0
   dt:      0.01
   # Initial state: [theta1, theta2, dtheta1, dtheta2]
   initial_state: [3.14159265, 0.0, 0.0, 0.0]

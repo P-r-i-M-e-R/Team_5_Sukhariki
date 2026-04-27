@@ -255,11 +255,32 @@ def create_animation(
     ax.plot(xd, yd, "o--", color="tab:red", lw=1.6, ms=6, alpha=0.55, label="target")
 
     baseline_line = None
+    baseline_gripper_line = None
+    baseline_ball = None
     if baseline_states is not None:
         (baseline_line,) = ax.plot([], [], "o--", color="tab:orange", lw=2, ms=5, alpha=0.65, label="non-adaptive")
+        (baseline_gripper_line,) = ax.plot(
+            [],
+            [],
+            color="tab:orange",
+            lw=2.0,
+            alpha=0.75,
+            solid_capstyle="round",
+            label="_nolegend_",
+        )
+        baseline_ball = plt.Circle(
+            (0.0, 0.0),
+            0.07 * (l1 + l2),
+            color="tab:orange",
+            ec="black",
+            lw=0.8,
+            alpha=0.55,
+            label="non-adaptive payload",
+        )
+        ax.add_patch(baseline_ball)
 
     (arm_line,) = ax.plot([], [], "o-", color="tab:blue", lw=3, ms=8, label="adaptive")
-    (gripper_line,) = ax.plot([], [], color="tab:blue", lw=2.2, solid_capstyle="round", label="gripper")
+    (gripper_line,) = ax.plot([], [], color="tab:blue", lw=2.2, solid_capstyle="round", label="_nolegend_")
     ball_label = "payload mass"
     if true_payload_mass is not None:
         ball_label = f"payload mass: {true_payload_mass:.2f} kg"
@@ -274,7 +295,7 @@ def create_animation(
         label="computed mass: -- kg",
     )
     time_text = ax.text(0.02, 0.95, "", transform=ax.transAxes, fontsize=10)
-    legend = ax.legend(loc="upper right", fontsize=8)
+    legend = ax.legend(loc="lower left", fontsize=8)
 
     skip = max(1, len(times) // 220)
     idx = np.arange(0, len(times), skip)
@@ -293,6 +314,15 @@ def create_animation(
             xb, yb = _joint_positions(baseline_states[i, :2], l1, l2)
             baseline_line.set_data(xb, yb)
             artists.append(baseline_line)
+            baseline_ball_center, baseline_ball_radius, baseline_gripper_x, baseline_gripper_y = _payload_geometry(
+                baseline_states[i, :2],
+                l1,
+                l2,
+            )
+            baseline_gripper_line.set_data(baseline_gripper_x, baseline_gripper_y)
+            baseline_ball.center = baseline_ball_center
+            baseline_ball.radius = baseline_ball_radius
+            artists.extend([baseline_gripper_line, baseline_ball])
 
         time_text.set_text(f"t = {times[i]:.2f} s")
         if estimates is not None:
