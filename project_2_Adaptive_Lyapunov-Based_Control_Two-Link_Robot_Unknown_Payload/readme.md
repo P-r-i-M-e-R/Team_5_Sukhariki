@@ -673,7 +673,6 @@ project_2_Adaptive_Lyapunov-Based_Control_Two-Link_Robot_Unknown_Payload/
 │   ├── system.py
 │   ├── adaptive_controller.py
 │   ├── controller.py
-│   ├── lyapunov_controller.py
 │   ├── simulation.py
 │   └── visualization.py
 ├── figures/
