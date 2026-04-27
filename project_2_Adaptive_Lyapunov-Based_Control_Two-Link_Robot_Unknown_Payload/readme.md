@@ -398,7 +398,7 @@ The first term provides the desired dissipation. The second term is the cross-te
 To cancel the cross-term in (16), we choose:
 
 ```math
-s^T Y_p + \frac{1}{\alpha}\dot{\hat{m}}_p = 0 \qquad \Rightarrow \qquad \boxed{\dot{\hat{m}}_p = -\alpha\,Y_p^T s} \qquad \text{(17)}
+s^T Y_p + \frac{1}{\alpha}\dot{\hat{m}}_p = 0 \qquad \Rightarrow \qquad {\dot{\hat{m}}_p = -\alpha\,Y_p^T s} \qquad \text{(17)}
 ```
 
 Substituting (17) into (16):
