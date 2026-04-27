@@ -526,7 +526,7 @@ to update the state for $t + \Delta t$, where $M$, $C$, $G$ use the **true** (un
 | **Initial State** | $\theta=[\pi,\,0],\; \dot{\theta}=[0,0]$ | Arm starts pointing left, stationary. |
 | **Target State** | $\theta_d=[0.9,\,-0.45]\;\mathrm{rad}$ | Arbitrary non-trivial target configuration. |
 | **True Payload Mass** | $m_p = 3.0$ kg | Unknown to the controller. |
-| **Simulation Time** | 8 seconds | Sufficient to capture the adaptation transient. |
+| **Simulation Time** | 10 seconds | Sufficient to capture the adaptation transient. |
 | **Baseline Gains** | $k_1=90,\; k_2=28$ | PD gains for non-adaptive reference controller. |
 | **Filtered-Error Gain** | $\lambda = 4.0$ | Sets the bandwidth of the filtered error. |
 | **Damping Gain** | $k_d = 80.0$ | Dissipation term in the adaptive control law. |

@@ -14,7 +14,7 @@ robot:
 # Simulation settings
 simulation:
   t_start: 0.0
-  t_end:   8.0
+  t_end:   20.0
   dt:      0.01
   # Initial state: [theta1, theta2, dtheta1, dtheta2]
   initial_state: [3.14159265, 0.0, 0.0, 0.0]
@@ -26,7 +26,7 @@ control:
 
 # Non-adaptive PD + known-link gravity baseline.
 baseline:
-  k1: 90.0
+  k1: 200.0
   k2: 28.0
 
 # Adaptive controller gains.

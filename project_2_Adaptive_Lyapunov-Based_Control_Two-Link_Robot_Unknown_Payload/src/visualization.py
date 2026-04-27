@@ -34,6 +34,31 @@ def _joint_positions(theta, l1, l2):
     return np.array([0.0, x1, x2]), np.array([0.0, y1, y2])
 
 
+def _payload_geometry(theta, l1, l2):
+    """Return ball center and simple gripper segments at the end effector."""
+    x, y = _joint_positions(theta, l1, l2)
+    wrist = np.array([x[-1], y[-1]])
+    angle = theta[0] + theta[1]
+
+    forward = np.array([np.cos(angle), np.sin(angle)])
+    normal = np.array([-np.sin(angle), np.cos(angle)])
+
+    scale = l1 + l2
+    ball_radius = 0.07 * scale
+    gripper_length = 0.09 * scale
+    jaw_gap = 0.07 * scale
+
+    ball_center = wrist + (gripper_length + 0.75 * ball_radius) * forward
+    left_root = wrist + jaw_gap * normal
+    right_root = wrist - jaw_gap * normal
+    left_tip = ball_center - 0.35 * ball_radius * forward + 0.70 * ball_radius * normal
+    right_tip = ball_center - 0.35 * ball_radius * forward - 0.70 * ball_radius * normal
+
+    gripper_x = np.array([left_root[0], left_tip[0], np.nan, right_root[0], right_tip[0]])
+    gripper_y = np.array([left_root[1], left_tip[1], np.nan, right_root[1], right_tip[1]])
+    return ball_center, ball_radius, gripper_x, gripper_y
+
+
 def plot_comparison(
     times,
     adaptive_states,
@@ -218,7 +243,7 @@ def create_animation(
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(6, 6))
-    lim = (l1 + l2) * 1.3
+    lim = (l1 + l2) * 1.45
     ax.set_xlim(-lim, lim)
     ax.set_ylim(-lim, lim)
     ax.set_aspect("equal")
@@ -234,9 +259,22 @@ def create_animation(
         (baseline_line,) = ax.plot([], [], "o--", color="tab:orange", lw=2, ms=5, alpha=0.65, label="non-adaptive")
 
     (arm_line,) = ax.plot([], [], "o-", color="tab:blue", lw=3, ms=8, label="adaptive")
+    (gripper_line,) = ax.plot([], [], color="tab:blue", lw=2.2, solid_capstyle="round", label="gripper")
+    ball_label = "payload mass"
+    if true_payload_mass is not None:
+        ball_label = f"payload mass: {true_payload_mass:.2f} kg"
+    ball_radius = 0.07 * (l1 + l2)
+    ball = plt.Circle((0.0, 0.0), ball_radius, color="tab:green", ec="black", lw=0.9, alpha=0.9, label=ball_label)
+    ax.add_patch(ball)
+    (estimate_proxy,) = ax.plot(
+        [],
+        [],
+        color="tab:purple",
+        lw=2,
+        label="computed mass: -- kg",
+    )
     time_text = ax.text(0.02, 0.95, "", transform=ax.transAxes, fontsize=10)
-    estimate_text = ax.text(0.02, 0.89, "", transform=ax.transAxes, fontsize=9)
-    ax.legend(loc="upper right", fontsize=8)
+    legend = ax.legend(loc="upper right", fontsize=8)
 
     skip = max(1, len(times) // 220)
     idx = np.arange(0, len(times), skip)
@@ -245,8 +283,12 @@ def create_animation(
         i = idx[frame]
         x, y = _joint_positions(states[i, :2], l1, l2)
         arm_line.set_data(x, y)
+        ball_center, current_ball_radius, gripper_x, gripper_y = _payload_geometry(states[i, :2], l1, l2)
+        gripper_line.set_data(gripper_x, gripper_y)
+        ball.center = ball_center
+        ball.radius = current_ball_radius
 
-        artists = [arm_line, time_text, estimate_text]
+        artists = [arm_line, gripper_line, ball, time_text]
         if baseline_line is not None:
             xb, yb = _joint_positions(baseline_states[i, :2], l1, l2)
             baseline_line.set_data(xb, yb)
@@ -255,13 +297,15 @@ def create_animation(
         time_text.set_text(f"t = {times[i]:.2f} s")
         if estimates is not None:
             mass_estimate = estimates[i, 0] if np.asarray(estimates).ndim == 2 else estimates[i]
-            estimate_text.set_text(
-                f"hat_m_p = {mass_estimate:.2f} kg"
-            )
+            estimate_proxy.set_label(f"computed mass: {mass_estimate:.2f} kg")
         elif true_payload_mass is not None:
-            estimate_text.set_text(f"m_p = {true_payload_mass:.2f} kg")
+            estimate_proxy.set_label(f"computed mass: {true_payload_mass:.2f} kg")
         else:
-            estimate_text.set_text("")
+            estimate_proxy.set_label("computed mass: -- kg")
+        legend_texts = legend.get_texts()
+        if legend_texts:
+            legend_texts[-1].set_text(estimate_proxy.get_label())
+            artists.extend(legend_texts)
         return artists
 
     ani = animation.FuncAnimation(fig, _update, frames=len(idx), blit=True, interval=30)
