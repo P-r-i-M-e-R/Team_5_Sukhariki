@@ -261,7 +261,7 @@ where the right-hand side is a **persistent disturbance** driven by the uncompen
 k_1 e^* = m_p\, G_p(\theta^*) \qquad \Rightarrow \qquad e^* = \frac{m_p}{k_1} G_p(\theta_d) \neq 0
 ```
 
-The non-adaptive controller converges to a **wrong equilibrium** that is offset from $\theta_d$ by an amount proportional to $m_p / k_1$. No choice of gains $k_1$ and $k_2$ can remove this error — it is structural, not a tuning problem.
+The non-adaptive controller converges to a **wrong equilibrium** that is offset from $\theta_d$ by an amount proportional to $m_p / k_1$.
 
 ---
 
@@ -418,7 +418,7 @@ Three consequences follow:
 3) from $s = 0$ we have $\dot{e} = -\lambda e$, so $e(t) \to 0$ exponentially and the regressor converges to $Y_p \to G_p(\theta_d) \neq 0$, since the payload gravity term is non-zero at any non-degenerate target configuration. 
 
 Combining (1)–(3): $\tilde{m}_p$ is constant, $Y_p \to G_p(\theta_d) \neq 0$, and $\tilde{m}_p Y_p = 0$ must hold, which forces $\tilde{m}_p = 0$. 
-Therefore the largest invariant set contained in $\{s = 0\}$ is the single equilibrium $\{s=0,\, e=0,\, \tilde{m}_p=0\}$, and by LaSalle's Invariance Principle every trajectory converges to it: $e(t)\to 0$, $\dot\theta(t)\to 0$, $\tilde{m}_p(t)\to 0$ as $t\to\infty$. $\blacksquare$
+Therefore the largest invariant set contained in $\{s = 0\}$ is the single equilibrium $\{s=0,\, e=0,\, \tilde{m}_p=0\}$, and by LaSalle's Invariance Principle every trajectory converges to it: $e(t)\to 0$, $\dot\theta(t)\to 0$, $\tilde{m}_p(t)\to 0$ as $t\to\infty$.
 
 ---
 
