@@ -1,0 +1,28 @@
+# Physical parameters
+physics:
+  m0: 5.0       # initial mass (kg)
+  mf: 2.0       # dry mass (kg)
+  beta: 0.3     # burn rate constant (1/s)
+  g: 9.81       # gravitational acceleration (m/s^2)
+
+# Simulation settings
+simulation:
+  t_end: 10.0   # simulation duration (s)
+  dt: 0.005     # time step (s)
+  z0: 0.0       # initial altitude (m)
+  zdot0: 0.0    # initial velocity (m/s)
+
+# Reference trajectory
+reference:
+  z_step: 10.0       # step altitude (m)
+  t_step: 2.0        # time of step (s)
+
+# Backstepping controller gains
+backstepping:
+  k1: 2.0   # virtual control gain (1/s)
+  K: 6.0    # backstepping damping gain (1/s)
+
+# PD baseline controller gains
+pd:
+  kp: 8.0   # proportional gain (1/s^2)
+  kd: 4.0   # derivative gain (1/s)
