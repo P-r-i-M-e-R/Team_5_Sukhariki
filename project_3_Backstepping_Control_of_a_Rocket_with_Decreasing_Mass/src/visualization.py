@@ -9,29 +9,30 @@ from matplotlib.lines import Line2D
 from matplotlib.animation import FuncAnimation, PillowWriter
 
 # ---------------------------------------------------------------------------
-# Rocket polygon
+# Rocket polygon drawing
 # ---------------------------------------------------------------------------
-_N_NOSE = 14   # points per nose quarter-arc
+_N_NOSE = 14   # points per nose
 
 def _build_rocket_template():
     r = 0.11   # body radius
     t = np.linspace(0, np.pi / 2, _N_NOSE)
 
-    # Right nose: quarter ellipse from tip (0, 1) to shoulder (r, 0.52)
+    # Right nose
     nose_rx = r * np.sin(t)
     nose_ry = 1.0 - 0.48 * (1.0 - np.cos(t))
 
     # Right straight body + fin
     right = np.array([
         [r,     0.52],
-        [r,    -0.38],   # fin root top
-        [0.30, -0.60],   # fin tip (swept)
-        [r,    -0.50],   # fin root bottom
-        [0.08, -0.57],   # nozzle edge R
+        [r,    -0.38], 
+        [0.30, -0.60],  
+        [r,    -0.50],   
+        [0.08, -0.57],  
     ])
 
     bottom = np.array([[0.0, -0.61]])   # nozzle base centre
 
+    # Left straight body + fin
     left = np.array([
         [-0.08, -0.57],
         [-r,    -0.50],
@@ -62,13 +63,15 @@ def _rocket_verts(cx, cy, scale):
 
 
 def _flame_verts(cx, cy, scale, thrust, t_nom=52.0):
-    """Teardrop flame; length proportional to thrust."""
+    """Teardrop flame; length proportional to thrust.
+    Half-width bell: 0 at edges, max 0.08 at centre
+    y: base at nozzle bottom (-0.61), tip at -(0.61 + fl*0.45)
+    """
     fl = float(np.clip(thrust / t_nom, 0.0, 1.8))
     n = 10
     th = np.linspace(0, np.pi, n)
-    # half-width bell: 0 at edges, max 0.08 at centre
+    
     fx = 0.08 * np.sin(th)
-    # y: base at nozzle bottom (-0.61), tip at -(0.61 + fl*0.45)
     tip = -0.61 - fl * 0.45
     fy  = -0.61 + (tip - (-0.61)) * (1 - np.cos(th)) / 2
     v = np.column_stack([fx, fy]) * scale
@@ -77,7 +80,9 @@ def _flame_verts(cx, cy, scale, thrust, t_nom=52.0):
     return v
 
 
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------------
+# Visualization
+# ------------------------------------------------------------------
 class Visualizer:
     def __init__(self, results, fig_dir="figures", anim_dir="animations"):
         self.r = results
@@ -104,14 +109,12 @@ class Visualizer:
 
         # Ground hatching
         ax.axhline(0, color="#555", lw=1.5, zorder=1)
-        ax.fill_between([-1.8, 1.8], [-0.6, -0.6], [0, 0],
-                        color="#d4c8a0", alpha=0.5, zorder=0)
+        ax.fill_between([-1.8, 1.8], [-0.6, -0.6], [0, 0], color="#d4c8a0", alpha=0.5, zorder=0)
         for xi in np.linspace(-1.5, 1.5, 9):
             ax.plot([xi, xi - 0.15], [0, -0.20], color="#888", lw=0.8, zorder=1)
 
-        # z-axis (arrow only, no tick labels)
-        ax.annotate("", xy=(0, 5.3), xytext=(0, 0.05),
-                    arrowprops=dict(arrowstyle="-|>", color="#333", lw=1.8))
+        # z-axis arrow only
+        ax.annotate("", xy=(0, 5.3), xytext=(0, 0.05), arrowprops=dict(arrowstyle="-|>", color="#333", lw=1.8))
         ax.text(0.10, 5.35, r"$z$", fontsize=15, va="center", fontweight="bold")
 
         # Rocket at z = 2.6
@@ -124,19 +127,13 @@ class Visualizer:
 
         # Thrust arrow — red, upward
         t_base = cy + scale * (1.0 + 0.06)
-        ax.annotate("", xy=(0, t_base + 0.85), xytext=(0, t_base + 0.08),
-                    arrowprops=dict(arrowstyle="-|>", color="#c0392b",
-                                   lw=2.8, mutation_scale=20), zorder=5)
-        ax.text(0.28, t_base + 0.50, r"$T$",
-                fontsize=15, color="#c0392b", va="center", fontweight="bold")
+        ax.annotate("", xy=(0, t_base + 0.85), xytext=(0, t_base + 0.08), arrowprops=dict(arrowstyle="-|>", color="#c0392b", lw=2.8, mutation_scale=20), zorder=5)
+        ax.text(0.28, t_base + 0.50, r"$T$", fontsize=15, color="#c0392b", va="center", fontweight="bold")
 
         # Gravity arrow — blue, downward
         g_base = cy - scale * (0.61 + 0.06)
-        ax.annotate("", xy=(0, g_base - 0.85), xytext=(0, g_base - 0.08),
-                    arrowprops=dict(arrowstyle="-|>", color="#1a5fa8",
-                                   lw=2.8, mutation_scale=20), zorder=5)
-        ax.text(0.28, g_base - 0.50, r"$m(t)\,g$",
-                fontsize=13, color="#1a5fa8", va="center", fontweight="bold")
+        ax.annotate("", xy=(0, g_base - 0.85), xytext=(0, g_base - 0.08), arrowprops=dict(arrowstyle="-|>", color="#1a5fa8", lw=2.8, mutation_scale=20), zorder=5)
+        ax.text(0.28, g_base - 0.50, r"$m(t)\,g$", fontsize=13, color="#1a5fa8", va="center", fontweight="bold")
 
         self._save(fig, "system_diagram.png")
 
@@ -169,10 +166,8 @@ class Visualizer:
     def tracking_error(self):
         r = self.r
         fig, ax = plt.subplots(figsize=(10, 4))
-        ax.plot(r["t"], r["bs"]["e"], color="tab:blue", lw=1.8,
-                label="Backstepping $e(t)$")
-        ax.plot(r["t"], r["pd"]["e"], color="tab:orange", lw=1.8,
-                label="PD baseline $e(t)$")
+        ax.plot(r["t"], r["bs"]["e"], color="tab:blue", lw=1.8, label="Backstepping $e(t)$")
+        ax.plot(r["t"], r["pd"]["e"], color="tab:orange", lw=1.8, label="PD baseline $e(t)$")
         ax.axhline(0, color="k", lw=0.8, ls="--")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Altitude error $e$ (m)")
@@ -191,39 +186,32 @@ class Visualizer:
         fig, axes = plt.subplots(2, 2, figsize=(14, 8))
 
         axes[0, 0].plot(t, r["bs"]["L1"], color="tab:blue", lw=1.8)
-        axes[0, 0].set_title(
-            r"Backstepping $L_1 = \frac{1}{2}e^2 + \frac{1}{2}\delta^2$")
+        axes[0, 0].set_title(r"Backstepping $L_1 = \frac{1}{2}e^2 + \frac{1}{2}\delta^2$")
         axes[0, 0].set_xlabel("Time (s)")
         axes[0, 0].set_ylabel(r"$L_1$ (m$^2$)")
         axes[0, 0].grid(True, alpha=0.3)
 
         axes[0, 1].plot(t, r["bs"]["dL1"], color="tab:blue", lw=1.8)
         axes[0, 1].axhline(0, color="k", lw=0.8, ls="--")
-        axes[0, 1].set_title(
-            r"Backstepping $\dot{L}_1 = -k_1 e^2 - K\delta^2 \leq 0$")
+        axes[0, 1].set_title(r"Backstepping $\dot{L}_1 = -k_1 e^2 - K\delta^2 \leq 0$")
         axes[0, 1].set_xlabel("Time (s)")
         axes[0, 1].set_ylabel(r"$\dot{L}_1$ (m$^2$/s)")
         axes[0, 1].grid(True, alpha=0.3)
 
         axes[1, 0].plot(t, r["pd"]["L_PD"], color="tab:orange", lw=1.8)
-        axes[1, 0].set_title(
-            r"PD $L^{PD} = \frac{1}{2}v_e^2 + \frac{1}{2}k_p e^2$")
+        axes[1, 0].set_title(r"PD $L^{PD} = \frac{1}{2}v_e^2 + \frac{1}{2}k_p e^2$")
         axes[1, 0].set_xlabel("Time (s)")
         axes[1, 0].set_ylabel(r"$L^{PD}$ (m$^2$)")
         axes[1, 0].grid(True, alpha=0.3)
 
         axes[1, 1].plot(t, r["pd"]["dL_PD"], color="tab:orange", lw=1.8)
         axes[1, 1].axhline(0, color="k", lw=0.8, ls="--")
-        axes[1, 1].set_title(
-            r"PD $\dot{L}^{PD}$ under $m(t) \neq m_0$")
+        axes[1, 1].set_title(r"PD $\dot{L}^{PD}$ under $m(t) \neq m_0$")
         axes[1, 1].set_xlabel("Time (s)")
         axes[1, 1].set_ylabel(r"$\dot{L}^{PD}$ (m$^2$/s)")
         axes[1, 1].grid(True, alpha=0.3)
 
-        fig.suptitle(
-            "Lyapunov functions and time derivatives",
-            fontsize=11,
-        )
+        fig.suptitle("Lyapunov functions and time derivatives", fontsize=11)
         fig.tight_layout()
         self._save(fig, "lyapunov.png")
 
@@ -233,10 +221,8 @@ class Visualizer:
     def thrust(self):
         r = self.r
         fig, ax = plt.subplots(figsize=(10, 4))
-        ax.plot(r["t"], r["bs"]["T"], color="tab:blue", lw=1.8,
-                label="Backstepping")
-        ax.plot(r["t"], r["pd"]["T"], color="tab:orange", lw=1.8,
-                label="PD baseline")
+        ax.plot(r["t"], r["bs"]["T"], color="tab:blue", lw=1.8, label="Backstepping")
+        ax.plot(r["t"], r["pd"]["T"], color="tab:orange", lw=1.8, label="PD baseline")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Thrust $T$ (N)")
         ax.set_title("Commanded Thrust $T(t)$", fontsize=11)
@@ -255,10 +241,8 @@ class Visualizer:
         e_pd  = r["pd"]["e"]
         ve_pd = r["pd"]["v_e"]
 
-        ax.plot(e_bs,  d_bs,  color="tab:blue", lw=2.0,
-                label=r"Backstepping $(e,\,\delta)$")
-        ax.plot(e_pd,  ve_pd, color="tab:orange",  lw=2.0,
-                label=r"PD baseline $(e,\,v_e)$")
+        ax.plot(e_bs,  d_bs,  color="tab:blue", lw=2.0, label=r"Backstepping $(e,\,\delta)$")
+        ax.plot(e_pd,  ve_pd, color="tab:orange",  lw=2.0, label=r"PD baseline $(e,\,v_e)$")
 
         # Start markers
         ax.plot(e_bs[0],  d_bs[0],  "o", ms=10, color="tab:blue", zorder=6)
@@ -271,10 +255,7 @@ class Visualizer:
         ax.axhline(0, color="k", lw=0.8, ls="--")
         ax.axvline(0, color="k", lw=0.8, ls="--")
         ax.set_xlabel(r"Altitude error $e$ (m)", fontsize=12)
-        ax.set_ylabel(
-            r"Backstepping error $\delta$ / velocity error $v_e$  (m/s)",
-            fontsize=11,
-        )
+        ax.set_ylabel(r"Backstepping error $\delta$ / velocity error $v_e$  (m/s)", fontsize=11)
         ax.set_title("Phase Portrait", fontsize=11)
 
         extra = [
@@ -292,23 +273,23 @@ class Visualizer:
     # Animation 
     # ------------------------------------------------------------------
     def animation(self):
-        r    = self.r
-        t    = r["t"]
+        r = self.r
+        t = r["t"]
         z_bs = r["bs"]["z"]
         z_pd = r["pd"]["z"]
         bs_T = r["bs"]["T"]
         pd_T = r["pd"]["T"]
-        zd   = r["zd"]
+        zd = r["zd"]
         e_bs = r["bs"]["e"]
         e_pd = r["pd"]["e"]
 
         step = max(1, int(len(t) / (25 * (t[-1] - t[0]))))
-        idx  = np.arange(0, len(t), step)
+        idx = np.arange(0, len(t), step)
 
         z_hi = max(float(z_bs.max()), float(z_pd.max()), float(zd.max())) + 1.5
         z_lo = min(float(z_bs.min()), float(z_pd.min()), -0.3)
         scene_h = z_hi - z_lo
-        scale   = scene_h * 0.09
+        scale = scene_h * 0.09
 
         fig, ax = plt.subplots(figsize=(9, 8))
         ax.set_xlim(-1.5, 5.5)
@@ -319,18 +300,14 @@ class Visualizer:
 
         # Ground
         ax.axhline(0, color="#555", lw=1.5, zorder=1)
-        ax.fill_between([-1.5, 5.5], [z_lo - 0.3] * 2, [0, 0],
-                        color="#d4c8a0", alpha=0.4, zorder=0)
+        ax.fill_between([-1.5, 5.5], [z_lo - 0.3] * 2, [0, 0], color="#d4c8a0", alpha=0.4, zorder=0)
 
         # Reference dashed line
-        ref_line = ax.axhline(float(zd[0]), color="#333", ls="--",
-                              lw=1.5, label="Reference $z_d$", zorder=2)
+        ref_line = ax.axhline(float(zd[0]), color="#333", ls="--", lw=1.5, label="Reference $z_d$", zorder=2)
 
         # Column headings
-        ax.text(1.0, z_hi + 0.35, "Backstepping", ha="center", fontsize=11,
-                color="tab:blue", fontweight="bold")
-        ax.text(3.5, z_hi + 0.35, "PD baseline",  ha="center", fontsize=11,
-                color="#c0580a", fontweight="bold")
+        ax.text(1.0, z_hi + 0.35, "Backstepping", ha="center", fontsize=11, color="tab:blue", fontweight="bold")
+        ax.text(3.5, z_hi + 0.35, "PD baseline",  ha="center", fontsize=11, color="#c0580a", fontweight="bold")
 
         # Rocket body patches
         patch_bs = MplPolygon(
@@ -361,10 +338,8 @@ class Visualizer:
         ax.add_patch(flame_pd)
 
         # Altitude trails
-        (trail_bs,) = ax.plot([], [], color="tab:blue",   lw=0.9,
-                               alpha=0.45, zorder=3)
-        (trail_pd,) = ax.plot([], [], color="tab:orange",  lw=0.9,
-                               alpha=0.45, zorder=3)
+        (trail_bs,) = ax.plot([], [], color="tab:blue", lw=0.9, alpha=0.45, zorder=3)
+        (trail_pd,) = ax.plot([], [], color="tab:orange", lw=0.9, alpha=0.45, zorder=3)
 
         ax.legend(loc="lower right", fontsize=9)
 
@@ -373,8 +348,7 @@ class Visualizer:
             0.97, 0.97, "",
             transform=ax.transAxes, ha="right", va="top",
             fontsize=9.5, family="monospace",
-            bbox=dict(boxstyle="round,pad=0.5", facecolor="white",
-                      alpha=0.88, edgecolor="#aaa"),
+            bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.88, edgecolor="#aaa"),
         )
 
         def _update(frame):
@@ -401,17 +375,14 @@ class Visualizer:
                 f" PD baseline   z = {zp:.2f} m\n"
                 f"   error  e = {e_pd[i]:+.3f} m"
             )
-            return (patch_bs, patch_pd, flame_bs, flame_pd,
-                    ref_line, trail_bs, trail_pd, info)
+            return (patch_bs, patch_pd, flame_bs, flame_pd, ref_line, trail_bs, trail_pd, info)
 
-        anim = FuncAnimation(fig, _update, frames=len(idx),
-                             interval=40, blit=True)
+        anim = FuncAnimation(fig, _update, frames=len(idx), interval=40, blit=True)
         path = os.path.join(self.anim_dir, "rocket_flight.gif")
         anim.save(path, writer=PillowWriter(fps=25))
         plt.close(fig)
         print(f"  saved {path}")
 
-    # ------------------------------------------------------------------
     def all(self):
         print("Generating system diagram...")
         self.system_diagram()
