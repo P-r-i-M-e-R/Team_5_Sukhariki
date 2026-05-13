@@ -20,3 +20,8 @@ Description: Stabilization of a nonlinear two-link robot manipulator using Lyapu
 Location: [project_2_Adaptive_Lyapunov-Based_Control_Two-Link_Robot_Unknown_Payload](./project_2_Adaptive_Lyapunov-Based_Control_Two-Link_Robot_Unknown_Payload/)
 
 Description: Adaptive control of a two-link robot manipulator carrying a payload of unknown mass. The controller estimates the payload mass online using a Lyapunov-based adaptation law and guarantees asymptotic convergence to the desired joint configuration.
+
+### Project 3: Backstepping Control of a Rocket with Decreasing Mass
+Location: [project_3_Backstepping_Control_of_a_Rocket_with_Decreasing_Mass](./project_3_Backstepping_Control_of_a_Rocket_with_Decreasing_Mass/)
+
+Description: Backstepping control design for a rocket subject to mass variation during ascent, demonstrating stabilization and trajectory tracking under nonlinear dynamics.

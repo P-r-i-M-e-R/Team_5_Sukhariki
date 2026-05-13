@@ -40,7 +40,7 @@ The mass decreases according to a nonlinear exponential law:
 m(t) = m_f + (m_0 - m_f)\,e^{-\beta t} \tag{1}
 ```
 
-where $m_0 > 0$ is the initial total mass (rocket body plus fuel) in kg, $m_f > 0$ is the final dry mass (rocket without fuel) in kg, and $\beta > 0$ is the burn rate constant in s$^{-1}$ that controls how quickly fuel is consumed. The time derivative of the mass is obtained by differentiating (1):
+where $m_0 > 0$ is the initial total mass (rocket body plus fuel) in kg, $m_f > 0$ is the final dry mass (rocket without fuel) in kg, and $\beta > 0$ is the burn rate constant in s⁻¹ that controls how quickly fuel is consumed. The time derivative of the mass is obtained by differentiating (1):
 
 ```math
 \dot{m}(t) = -\beta(m_0 - m_f)\,e^{-\beta t} \tag{2}
@@ -615,10 +615,6 @@ This runs both the backstepping and PD controllers and regenerates all figures a
 ## 11. References
 
 1. Rios-Garcia, N. et al. (2025). *Control and Navigation of a 2-D Electric Rocket*. arXiv:2509.19970.
-2. Gomes, P. et al. (2025). *Pitch Plane Trajectory Tracking Control for Sounding Rockets via Adaptive Feedback Linearization*. arXiv:2501.05285.
-3. Ren, Z. (2023). *A Survey of Modularized Backstepping Control Design*. arXiv:2305.02066.
-4. Khalil, H.K. (2002). *Nonlinear Systems*, 3rd ed. Prentice Hall. Section 14.3.
-5. Krstic, M., Kanellakopoulos, I., Kokotovic, P. (1995). *Nonlinear and Adaptive Control Design*. Wiley.
 
 ---
 
