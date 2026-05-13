@@ -195,7 +195,6 @@ with equality only at $e = 0$.
 
 **Convergence via LaSalle's invariance principle.** The set where $\dot{L}_0 = 0$ is $\mathcal{S}_0 = \{0\}$. The only trajectory of $\dot{e} = -k_1 e$ that stays in $\mathcal{S}_0$ is $e(t) \equiv 0$. Since $L_0$ is positive definite and $\dot{L}_0 \leq 0$ everywhere, LaSalle's invariance principle guarantees $e(t) \to 0$ as $t \to \infty$.
 
-The triple $(\pi_0,\, L_0,\, K_0)$ with $K_0(r) = k_1 r^2$ is a valid stabilization triple for the base plant.
 
 ### 4.2 Step 2 — Augmented System and New Triple $(\pi_1, L_1, K_1)$
 
@@ -568,7 +567,6 @@ The PD controller fails in a **structural** way when the mass changes: it conver
 
 - The mass model must be known exactly; an unknown burn rate β would require adaptive extensions.
 - The model is 1-D: attitude dynamics and aerodynamic drag are not included.
-- The constraint T ≥ 0 is enforced by clipping; for very large initial errors this breaks the Lyapunov proof locally.
 
 ---
 
