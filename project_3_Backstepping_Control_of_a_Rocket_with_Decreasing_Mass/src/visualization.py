@@ -9,7 +9,7 @@ from matplotlib.lines import Line2D
 from matplotlib.animation import FuncAnimation, PillowWriter
 
 # ---------------------------------------------------------------------------
-# Rocket polygon: smooth ogive nose + slim body + swept fins
+# Rocket polygon
 # ---------------------------------------------------------------------------
 _N_NOSE = 14   # points per nose quarter-arc
 
@@ -93,7 +93,7 @@ class Visualizer:
         print(f"  saved {path}")
 
     # ------------------------------------------------------------------
-    # System diagram (no simulation data needed)
+    # System diagram 
     # ------------------------------------------------------------------
     def system_diagram(self):
         fig, ax = plt.subplots(figsize=(3.8, 5.8))
@@ -159,11 +159,7 @@ class Visualizer:
             ax.set_title(f"Altitude Tracking — {label}")
             ax.legend()
             ax.grid(True, alpha=0.3)
-        fig.suptitle(
-            "Figure 2: Altitude $z(t)$ vs. reference $z_d(t)$.\n"
-            "Backstepping maintains zero steady-state error; PD accumulates a growing offset as $m(t)$ decreases.",
-            fontsize=11,
-        )
+        ax.set_title("Altitude tracking", fontsize=11)
         fig.tight_layout()
         self._save(fig, "altitude_tracking.png")
 
@@ -180,19 +176,14 @@ class Visualizer:
         ax.axhline(0, color="k", lw=0.8, ls="--")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Altitude error $e$ (m)")
-        ax.set_title("Tracking Error $e(t) = z(t) - z_d(t)$")
+        ax.set_title("Tracking Error $e(t) = z(t) - z_d(t)$", fontsize=11)
         ax.legend()
         ax.grid(True, alpha=0.3)
-        fig.suptitle(
-            "Tracking error $e(t)$: backstepping converges to zero; "
-            "PD converges to a nonzero steady-state offset that grows as fuel burns.",
-            fontsize=10,
-        )
         fig.tight_layout()
         self._save(fig, "tracking_error.png")
 
     # ------------------------------------------------------------------
-    # Lyapunov functions and their derivatives (2 × 2)
+    # Lyapunov functions and their derivatives
     # ------------------------------------------------------------------
     def lyapunov(self):
         r = self.r
@@ -209,7 +200,7 @@ class Visualizer:
         axes[0, 1].plot(t, r["bs"]["dL1"], color="tab:blue", lw=1.8)
         axes[0, 1].axhline(0, color="k", lw=0.8, ls="--")
         axes[0, 1].set_title(
-            r"Backstepping $\dot{L}_1 = -k_1 e^2 - K\delta^2 \leq 0$  [eq. 20]")
+            r"Backstepping $\dot{L}_1 = -k_1 e^2 - K\delta^2 \leq 0$")
         axes[0, 1].set_xlabel("Time (s)")
         axes[0, 1].set_ylabel(r"$\dot{L}_1$ (m$^2$/s)")
         axes[0, 1].grid(True, alpha=0.3)
@@ -224,15 +215,13 @@ class Visualizer:
         axes[1, 1].plot(t, r["pd"]["dL_PD"], color="tab:orange", lw=1.8)
         axes[1, 1].axhline(0, color="k", lw=0.8, ls="--")
         axes[1, 1].set_title(
-            r"PD $\dot{L}^{PD}$ under $m(t) \neq m_0$  [eq. 30]")
+            r"PD $\dot{L}^{PD}$ under $m(t) \neq m_0$")
         axes[1, 1].set_xlabel("Time (s)")
         axes[1, 1].set_ylabel(r"$\dot{L}^{PD}$ (m$^2$/s)")
         axes[1, 1].grid(True, alpha=0.3)
 
         fig.suptitle(
-            "Figure 3: Lyapunov functions and time derivatives.\n"
-            r"$\dot{L}_1 \leq 0$ everywhere (backstepping asymptotically stable). "
-            r"$\dot{L}^{PD}$ turns positive as $m(t)$ drops, explaining the PD steady-state drift.",
+            "Lyapunov functions and time derivatives",
             fontsize=11,
         )
         fig.tight_layout()
@@ -250,21 +239,13 @@ class Visualizer:
                 label="PD baseline")
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Thrust $T$ (N)")
-        ax.set_title("Commanded Thrust $T(t)$")
+        ax.set_title("Commanded Thrust $T(t)$", fontsize=11)
         ax.legend()
         ax.grid(True, alpha=0.3)
-        fig.suptitle(
-            "Figure 4: Thrust $T(t)$. "
-            "Backstepping reduces thrust as $m(t)$ falls (lighter rocket needs less force); "
-            "PD keeps approximately constant thrust.",
-            fontsize=10,
-        )
         fig.tight_layout()
         self._save(fig, "thrust.png")
 
-    # ------------------------------------------------------------------
-    # Phase portrait — both trajectories on one axes, no colourbar
-    # ------------------------------------------------------------------
+
     def phase_portrait(self):
         r = self.r
         fig, ax = plt.subplots(figsize=(8, 6))
@@ -274,13 +255,13 @@ class Visualizer:
         e_pd  = r["pd"]["e"]
         ve_pd = r["pd"]["v_e"]
 
-        ax.plot(e_bs,  d_bs,  color="tab:blue",   lw=2.0,
+        ax.plot(e_bs,  d_bs,  color="tab:blue", lw=2.0,
                 label=r"Backstepping $(e,\,\delta)$")
         ax.plot(e_pd,  ve_pd, color="tab:orange",  lw=2.0,
                 label=r"PD baseline $(e,\,v_e)$")
 
         # Start markers
-        ax.plot(e_bs[0],  d_bs[0],  "o", ms=10, color="tab:blue",   zorder=6)
+        ax.plot(e_bs[0],  d_bs[0],  "o", ms=10, color="tab:blue", zorder=6)
         ax.plot(e_pd[0],  ve_pd[0], "o", ms=10, color="tab:orange", zorder=6)
 
         # Finish markers
@@ -294,7 +275,7 @@ class Visualizer:
             r"Backstepping error $\delta$ / velocity error $v_e$  (m/s)",
             fontsize=11,
         )
-        ax.set_title("Phase Portrait", fontsize=13)
+        ax.set_title("Phase Portrait", fontsize=11)
 
         extra = [
             Line2D([0], [0], marker="o", color="gray", ms=9,  ls="", label="Start"),
@@ -304,17 +285,11 @@ class Visualizer:
         ax.legend(handles=handles + extra, fontsize=10)
         ax.grid(True, alpha=0.3)
 
-        fig.suptitle(
-            "Figure 5: Phase portraits.\n"
-            r"Backstepping ($\circ\to\star$) spirals into $(0,0)$; "
-            "PD converges to off-origin equilibrium $e^* > 0$.",
-            fontsize=11,
-        )
         fig.tight_layout()
         self._save(fig, "phase_portrait.png")
 
     # ------------------------------------------------------------------
-    # Animation — realistic rocket silhouette
+    # Animation 
     # ------------------------------------------------------------------
     def animation(self):
         r    = self.r
