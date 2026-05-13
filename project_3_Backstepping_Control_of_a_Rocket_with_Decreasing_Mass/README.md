@@ -18,7 +18,7 @@
 
 **Class of methods:** backstepping control based on a Control Lyapunov Function (CLF). The procedure exploits the cascade structure of the altitude dynamics: a stabilization triple $(\pi_0, L_0, K_0)$ is first designed for the base plant, then the Lyapunov function is augmented by the squared backstepping error to obtain a new triple $(\pi_1, L_1, K_1)$ for the full system. Formal asymptotic stability is proved via LaSalle's invariance principle.
 
-**Comparison:** the backstepping controller is compared with a PD controller. The PD controller ignores the mass change in its law and therefore accumulates a growing steady-state error as $m(t)$ decreases. The backstepping controller uses $m(t)$ explicitly and maintains tracking accuracy. A formal analysis of the PD controller including its Lyapunov function and steady-state error is given in Section 4.3.
+**Comparison:** the backstepping controller is compared with a PD controller. The PD controller ignores the mass change in its law and therefore accumulates a growing steady-state error as $m(t)$ decreases. The backstepping controller uses $m(t)$ explicitly and maintains tracking accuracy. 
 
 ---
 
@@ -88,7 +88,6 @@ The desired velocity is $\dot{z}_d = 0$ and the desired acceleration is $\ddot{z
 
 ## 3. Mathematical Specification
 
-All symbols are defined at first use. No symbol is reused with a different meaning.
 
 | Symbol | Meaning |
 |---|---|
@@ -200,7 +199,7 @@ The triple $(\pi_0,\, L_0,\, K_0)$ with $K_0(r) = k_1 r^2$ is a valid stabilizat
 
 ### 4.2 Step 2 — Augmented System and New Triple $(\pi_1, L_1, K_1)$
 
-**Why a second step is needed.** In the full system, $v_e$ is a state variable governed by equation (7), not a free input. The backstepping error $\delta = v_e + k_1 e$ measures the mismatch between the actual $v_e$ and the desired value $\pi_0(e)$.
+**Why a second step is needed.** In the full system, $v_e$ is a state variable governed by equation (7). The backstepping error $\delta = v_e + k_1 e$ measures the mismatch between the actual $v_e$ and the desired value $\pi_0(e)$.
 
 **Augmented Lyapunov function.**
 
@@ -502,7 +501,7 @@ Both controllers track the step at $t = 2$ s when the mass is still close to $m_
 </p>
 
 <p align="center">
-  <em>Figure 3: Lyapunov functions $L_1(t)$, $L^{PD}(t)$ and their time derivatives for both controllers.</em>
+  <em>Figure 3: Lyapunov functions L₁(t), L<sup>PD</sup>(t) and their time derivatives for both controllers.</em>
 </p>
 
 **Interpretation of Figure 3**
@@ -516,7 +515,7 @@ $L_1(t)$ (top-left) decreases monotonically, confirming inequality (20). Its der
 </p>
 
 <p align="center">
-  <em>Figure: Altitude tracking error $e(t) = z(t) - z_d(t)$ for both controllers.</em>
+  <em>Figure: Altitude tracking error e(t) = z(t) − z_d(t) for both controllers.</em>
 </p>
 
 **Interpretation**
