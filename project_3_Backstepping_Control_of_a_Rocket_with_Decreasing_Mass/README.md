@@ -37,13 +37,13 @@ The rocket moves vertically. The thrust $T$ acts upward, and the gravitational f
 The mass decreases according to a nonlinear exponential law:
 
 ```math
-m(t) = m_f + (m_0 - m_f)\,e^{-\beta t} \tag{1}
+m(t) = m_f + (m_0 - m_f)\,e^{-\beta t} \qquad\text{(1)}
 ```
 
 where $m_0 > 0$ is the initial total mass (rocket body plus fuel) in kg, $m_f > 0$ is the final dry mass (rocket without fuel) in kg, and $\beta > 0$ is the burn rate constant in s⁻¹ that controls how quickly fuel is consumed. The time derivative of the mass is obtained by differentiating (1):
 
 ```math
-\dot{m}(t) = -\beta(m_0 - m_f)\,e^{-\beta t} \tag{2}
+\dot{m}(t) = -\beta(m_0 - m_f)\,e^{-\beta t} \qquad\text{(2)}
 ```
 
 Both $m(t)$ and $\dot{m}(t)$ are known to the backstepping controller at every time step. The PD controller does not use them.
@@ -114,13 +114,13 @@ The desired velocity is $\dot{z}_d = 0$ and the desired acceleration is $\ddot{z
 Applying Newton's second law to the rocket along the vertical axis:
 
 ```math
-m(t)\,\ddot{z} = T - m(t)\,g \tag{3}
+m(t)\,\ddot{z} = T - m(t)\,g \qquad\text{(3)}
 ```
 
 Dividing both sides by $m(t) > 0$:
 
 ```math
-\ddot{z} = \frac{T}{m(t)} - g \tag{4}
+\ddot{z} = \frac{T}{m(t)} - g \qquad\text{(4)}
 ```
 
 This is a second-order system with one input $T$ and a time-varying coefficient $1/m(t)$.
@@ -130,19 +130,19 @@ This is a second-order system with one input $T$ and a time-varying coefficient 
 Define the altitude tracking error $e$ and the velocity tracking error $v_e$:
 
 ```math
-e = z - z_d, \qquad v_e = \dot{z} - \dot{z}_d \tag{5}
+e = z - z_d, \qquad v_e = \dot{z} - \dot{z}_d \qquad\text{(5)}
 ```
 
 Differentiating $e$ with respect to time:
 
 ```math
-\dot{e} = \dot{z} - \dot{z}_d = v_e \tag{6}
+\dot{e} = \dot{z} - \dot{z}_d = v_e \qquad\text{(6)}
 ```
 
 Differentiating $v_e$ and substituting equation (4):
 
 ```math
-\dot{v}_e = \ddot{z} - \ddot{z}_d = \frac{T}{m(t)} - g - \ddot{z}_d \tag{7}
+\dot{v}_e = \ddot{z} - \ddot{z}_d = \frac{T}{m(t)} - g - \ddot{z}_d \qquad\text{(7)}
 ```
 
 Equations (6) and (7) form a cascade: the altitude error $e$ is driven by the velocity error $v_e$, and $v_e$ is driven by the actual thrust $T$ through the time-varying gain $1/m(t)$.
@@ -152,7 +152,7 @@ Equations (6) and (7) form a cascade: the altitude error $e$ is driven by the ve
 In Step 1 below, the desired value for $v_e$ is chosen as $\pi_0(e) = -k_1 e$. The backstepping error variable $\delta$ measures how far the actual velocity error is from this desired value:
 
 ```math
-\delta := v_e - \pi_0(e) = v_e + k_1 e \tag{8}
+\delta := v_e - \pi_0(e) = v_e + k_1 e \qquad\text{(8)}
 ```
 
 When $\delta = 0$, the velocity error behaves as needed to drive $e \to 0$ at rate $k_1$.
@@ -172,7 +172,7 @@ When $\delta = 0$, the velocity error behaves as needed to drive $e \to 0$ at ra
 **Choice of desired velocity.** We want $e(t) \to 0$. Choose:
 
 ```math
-\pi_0(e) = -k_1 e, \quad k_1 > 0 \tag{9}
+\pi_0(e) = -k_1 e, \quad k_1 > 0 \qquad\text{(9)}
 ```
 
 where $k_1$ is a positive gain in s⁻¹ and $\pi_0(e)$ is the desired value for $v_e$. If $v_e = \pi_0(e)$, then $\dot{e} = -k_1 e$ and the altitude error converges to zero exponentially at rate $k_1$.
@@ -180,7 +180,7 @@ where $k_1$ is a positive gain in s⁻¹ and $\pi_0(e)$ is the desired value for
 **CLF candidate for the base plant.**
 
 ```math
-L_0 = \frac{1}{2}e^2 \tag{10}
+L_0 = \frac{1}{2}e^2 \qquad\text{(10)}
 ```
 
 $L_0$ is positive definite: $L_0 \geq 0$ for all $e$, and $L_0 = 0$ if and only if $e = 0$.
@@ -188,7 +188,7 @@ $L_0$ is positive definite: $L_0 \geq 0$ for all $e$, and $L_0 = 0$ if and only 
 **Time derivative of $L_0$.** Differentiating (10) and substituting $\dot{e} = \pi_0(e) = -k_1 e$:
 
 ```math
-\dot{L}_0 = e\,\dot{e} = e\,(-k_1 e) = -k_1 e^2 \leq 0 \tag{11}
+\dot{L}_0 = e\,\dot{e} = e\,(-k_1 e) = -k_1 e^2 \leq 0 \qquad\text{(11)}
 ```
 
 with equality only at $e = 0$.
@@ -203,7 +203,7 @@ with equality only at $e = 0$.
 **Augmented Lyapunov function.**
 
 ```math
-L_1 := L_0 + \frac{1}{2}\delta^2 = \frac{1}{2}e^2 + \frac{1}{2}\delta^2 \tag{12}
+L_1 := L_0 + \frac{1}{2}\delta^2 = \frac{1}{2}e^2 + \frac{1}{2}\delta^2 \qquad\text{(12)}
 ```
 
 $L_1$ is positive definite: $L_1 \geq 0$, and $L_1 = 0$ if and only if $e = 0$ and $\delta = 0$.
@@ -211,37 +211,37 @@ $L_1$ is positive definite: $L_1 \geq 0$, and $L_1 = 0$ if and only if $e = 0$ a
 **Time derivative of $L_1$.**
 
 ```math
-\dot{L}_1 = e\,\dot{e} + \delta\,\dot{\delta} \tag{13}
+\dot{L}_1 = e\,\dot{e} + \delta\,\dot{\delta} \qquad\text{(13)}
 ```
 
 *First term.* From (6): $\dot{e} = v_e$. From (8): $v_e = \delta - k_1 e$. Therefore:
 
 ```math
-e\,\dot{e} = e\,(\delta - k_1 e) = e\delta - k_1 e^2 \tag{14}
+e\,\dot{e} = e\,(\delta - k_1 e) = e\delta - k_1 e^2 \qquad\text{(14)}
 ```
 
 *Second term.* Differentiating $\delta = v_e + k_1 e$:
 
 ```math
-\dot{\delta} = \dot{v}_e + k_1\,\dot{e} \tag{15}
+\dot{\delta} = \dot{v}_e + k_1\,\dot{e} \qquad\text{(15)}
 ```
 
 Substituting $\dot{e} = v_e$ from (6) and $\dot{v}_e$ from (7) into (15):
 
 ```math
-\dot{\delta} = \left(\frac{T}{m(t)} - g - \ddot{z}_d\right) + k_1\,v_e = \frac{T}{m(t)} - g - \ddot{z}_d + k_1 v_e \tag{16}
+\dot{\delta} = \left(\frac{T}{m(t)} - g - \ddot{z}_d\right) + k_1\,v_e = \frac{T}{m(t)} - g - \ddot{z}_d + k_1 v_e \qquad\text{(16)}
 ```
 
 **Control law.** Substituting (14) and (16) into (13):
 
 ```math
-\dot{L}_1 = e\delta - k_1 e^2 + \delta\!\left(\frac{T}{m(t)} - g - \ddot{z}_d + k_1 v_e\right) \tag{17}
+\dot{L}_1 = e\delta - k_1 e^2 + \delta\!\left(\frac{T}{m(t)} - g - \ddot{z}_d + k_1 v_e\right) \qquad\text{(17)}
 ```
 
 To make $\dot{L}_1$ negative definite, we need the term multiplying $\delta$ in the second part to cancel $e\delta$ from the first part and add damping $-K\delta^2$. We require:
 
 ```math
-\delta\!\left(\frac{T}{m(t)} - g - \ddot{z}_d + k_1 v_e\right) = -K\delta^2 - e\delta \tag{18}
+\delta\!\left(\frac{T}{m(t)} - g - \ddot{z}_d + k_1 v_e\right) = -K\delta^2 - e\delta \qquad\text{(18)}
 ```
 
 Dividing both sides by $\delta$ and solving for $T$:
@@ -251,7 +251,7 @@ Dividing both sides by $\delta$ and solving for $T$:
 ```
 
 ```math
-T = m(t)\bigl(g + \ddot{z}_d - k_1 v_e - K\delta - e\bigr) \tag{19}
+T = m(t)\bigl(g + \ddot{z}_d - k_1 v_e - K\delta - e\bigr) \qquad\text{(19)}
 ```
 
 where $K > 0$ is the backstepping damping gain in s⁻¹. The factor $m(t)$ in (19) explicitly cancels the time-varying coefficient $1/m(t)$ from equation (7). Since $m(t)$ is known analytically from (1), this cancellation is exact.
@@ -263,13 +263,13 @@ where $K > 0$ is the backstepping damping gain in s⁻¹. The factor $m(t)$ in (
 ```
 
 ```math
-= e\delta - k_1 e^2 - K\delta^2 - e\delta = -k_1 e^2 - K\delta^2 \tag{20}
+= e\delta - k_1 e^2 - K\delta^2 - e\delta = -k_1 e^2 - K\delta^2 \qquad\text{(20)}
 ```
 
 Since $k_1 > 0$ and $K > 0$, using $e^2 + \delta^2 = 2L_1$:
 
 ```math
-\dot{L}_1 = -k_1 e^2 - K\delta^2 \leq -\min(k_1, K)\,(e^2 + \delta^2) = -2\min(k_1, K)\,L_1 \tag{21}
+\dot{L}_1 = -k_1 e^2 - K\delta^2 \leq -\min(k_1, K)\,(e^2 + \delta^2) = -2\min(k_1, K)\,L_1 \qquad\text{(21)}
 ```
 
 so $\dot{L}_1 < 0$ for all $(e, \delta) \neq (0, 0)$.
@@ -279,7 +279,7 @@ so $\dot{L}_1 < 0$ for all $(e, \delta) \neq (0, 0)$.
 **Why the time-varying mass does not break stability.** After substituting (19) into (16):
 
 ```math
-\dot{\delta} = -K\delta - e \tag{22}
+\dot{\delta} = -K\delta - e \qquad\text{(22)}
 ```
 
 This is linear and time-invariant with decay rate $K$, regardless of how $m(t)$ changes. Inequality (21) holds for all $t \geq 0$ under the single condition $m(t) > 0$, which is guaranteed since $m(t) \geq m_f > 0$ from (1).
@@ -301,7 +301,7 @@ Since $\ddot{z} = \ddot{e}$ for $\ddot{z}_d = 0$:
 Assigning the desired closed-loop error dynamics $\ddot{e} = -k_p e - k_d v_e$ and solving for $T$:
 
 ```math
-T_{\text{PD}} = m_0\bigl(g - k_p\,e - k_d\,v_e\bigr) \tag{23}
+T_{\text{PD}} = m_0\bigl(g - k_p\,e - k_d\,v_e\bigr) \qquad\text{(23)}
 ```
 
 where $k_p > 0$ is the proportional gain in s⁻² and $k_d > 0$ is the derivative gain in s⁻¹.
@@ -309,19 +309,19 @@ where $k_p > 0$ is the proportional gain in s⁻² and $k_d > 0$ is the derivati
 **Nominal case ($m(t) = m_0$).** Substituting (23) into (4) with $m(t) = m_0$:
 
 ```math
-\ddot{e} = g - k_p e - k_d v_e - g = -k_p e - k_d v_e \tag{24}
+\ddot{e} = g - k_p e - k_d v_e - g = -k_p e - k_d v_e \qquad\text{(24)}
 ```
 
 which reads:
 
 ```math
-\ddot{e} + k_d \dot{e} + k_p e = 0 \tag{25}
+\ddot{e} + k_d \dot{e} + k_p e = 0 \qquad\text{(25)}
 ```
 
 Define the Lyapunov candidate:
 
 ```math
-L^{\text{PD}} = \frac{1}{2}v_e^2 + \frac{1}{2}k_p\,e^2 \tag{26}
+L^{\text{PD}} = \frac{1}{2}v_e^2 + \frac{1}{2}k_p\,e^2 \qquad\text{(26)}
 ```
 
 $L^{\text{PD}}$ is positive definite: $L^{\text{PD}} \geq 0$, and $L^{\text{PD}} = 0$ if and only if $e = 0$ and $v_e = 0$.
@@ -329,7 +329,7 @@ $L^{\text{PD}}$ is positive definite: $L^{\text{PD}} \geq 0$, and $L^{\text{PD}}
 Differentiating (26) along trajectories of (25):
 
 ```math
-\dot{L}^{\text{PD}} = v_e\,\dot{v}_e + k_p\,e\,v_e = v_e\bigl(-k_p e - k_d v_e\bigr) + k_p\,e\,v_e = -k_d v_e^2 \leq 0 \tag{27}
+\dot{L}^{\text{PD}} = v_e\,\dot{v}_e + k_p\,e\,v_e = v_e\bigl(-k_p e - k_d v_e\bigr) + k_p\,e\,v_e = -k_d v_e^2 \leq 0 \qquad\text{(27)}
 ```
 
 The set where $\dot{L}^{\text{PD}} = 0$ is $\{v_e = 0\}$. On any trajectory confined to this set, $v_e \equiv 0$ and $\dot{v}_e \equiv 0$. Substituting into (25): $k_p e = 0$, which forces $e = 0$. The largest invariant subset of $\{v_e = 0\}$ is $\{e = 0,\, v_e = 0\}$. By LaSalle's invariance principle, $e(t) \to 0$ and $v_e(t) \to 0$ as $t \to \infty$.
@@ -339,13 +339,13 @@ The set where $\dot{L}^{\text{PD}} = 0$ is $\{v_e = 0\}$. On any trajectory conf
 When the mass decreases but the controller still applies (23), the actual acceleration is:
 
 ```math
-\ddot{z} = \frac{T_{\text{PD}}}{m(t)} - g = \frac{m_0}{m(t)}\bigl(g - k_p e - k_d v_e\bigr) - g \tag{28}
+\ddot{z} = \frac{T_{\text{PD}}}{m(t)} - g = \frac{m_0}{m(t)}\bigl(g - k_p e - k_d v_e\bigr) - g \qquad\text{(28)}
 ```
 
 Define the mass ratio $\mu(t) := m_0/m(t) \geq 1$. Since $\ddot{z} = \ddot{e}$, expanding (28):
 
 ```math
-\ddot{e} = (\mu(t)-1)\,g - \mu(t)\,k_p\,e - \mu(t)\,k_d\,v_e \tag{29}
+\ddot{e} = (\mu(t)-1)\,g - \mu(t)\,k_p\,e - \mu(t)\,k_d\,v_e \qquad\text{(29)}
 ```
 
 The term $(\mu(t)-1)g > 0$ is a **persistent forcing term** driven by the uncompensated mass change. Computing $\dot{L}^{\text{PD}}$ along trajectories of (29):
@@ -359,7 +359,7 @@ The term $(\mu(t)-1)g > 0$ is a **persistent forcing term** driven by the uncomp
 ```
 
 ```math
-= -\mu k_d v_e^2 + k_p\,e\,v_e(1-\mu) + (\mu-1)g\,v_e \tag{30}
+= -\mu k_d v_e^2 + k_p\,e\,v_e(1-\mu) + (\mu-1)g\,v_e \qquad\text{(30)}
 ```
 
 The first term $-\mu k_d v_e^2$ provides dissipation. However, the term $(\mu-1)g\,v_e$ is a persistent input that prevents the system from reaching $e = 0$, $v_e = 0$.
@@ -375,13 +375,13 @@ At any steady state ($\ddot{e} = 0$, $v_e = 0$), equation (29) reduces to:
 ```
 
 ```math
-e^* = \frac{g}{k_p}\!\left(1 - \frac{m(t)}{m_0}\right) \tag{31}
+e^* = \frac{g}{k_p}\!\left(1 - \frac{m(t)}{m_0}\right) \qquad\text{(31)}
 ```
 
 Since $m(t) < m_0$ for all $t > 0$, we have $e^* > 0$: the rocket holds altitude above the reference, with an error that grows as fuel burns. As $t \to \infty$ and $m(t) \to m_f$:
 
 ```math
-e^*_{\max} = \frac{g}{k_p}\!\left(1 - \frac{m_f}{m_0}\right) = \frac{9.81}{8}\!\left(1 - \frac{2}{5}\right) \approx 0.74\;\text{m} \tag{32}
+e^*_{\max} = \frac{g}{k_p}\!\left(1 - \frac{m_f}{m_0}\right) = \frac{9.81}{8}\!\left(1 - \frac{2}{5}\right) \approx 0.74\;\text{m} \qquad\text{(32)}
 ```
 
 The PD controller converges to a **wrong equilibrium** offset from $z_d$ by an amount growing with the fuel consumed. This failure cannot be corrected by retuning $k_p$ or $k_d$, because the steady-state error (31) is structural: it vanishes only when $m(t) = m_0$. Only a controller that uses $m(t)$ explicitly — as in equation (19) — can guarantee zero steady-state error.
