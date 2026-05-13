@@ -30,7 +30,7 @@ The rocket moves vertically. The thrust $T$ acts upward, and the gravitational f
 
 ![Figure 1: Free-body diagram. Red arrow — thrust T upward; blue arrow — gravitational force m(t)g downward.](figures/system_diagram.png)
 
-*Figure 1: Free-body diagram. The $z$-axis points upward. Red arrow — thrust $T$; blue arrow — gravitational force $m(t)g$.*
+*Figure 1: Free-body diagram. The z-axis points upward. Red arrow — thrust T; blue arrow — gravitational force m(t)g.*
 
 ### Mass Model
 
@@ -492,7 +492,7 @@ Both algorithms are run simultaneously on the same reference trajectory and thei
 
 **Interpretation of Figure 2**
 
-Both controllers track the step at $t = 2$ s when the mass is still close to $m_0$. As fuel burns and $m(t)$ decreases, the PD controller develops a growing positive altitude error consistent with equation (31). By $t = 10$ s, $m(10) \approx 2.15$ kg and the instantaneous steady-state error from (31) reaches approximately $0.70$ m. The backstepping controller maintains near-zero error because inequality (21) guarantees $\dot{L}_1 < 0$ regardless of the value of $m(t)$.
+Both controllers track the step at t = 2 s when the mass is still close to m₀. As fuel burns and m(t) decreases, the PD controller develops a growing positive altitude error consistent with equation (31). By t = 10 s, m(10) ≈ 2.15 kg and the instantaneous steady-state error from (31) reaches approximately 0.70 m. The backstepping controller maintains near-zero error because inequality (21) guarantees dL₁/dt < 0 regardless of the value of m(t).
 
 ### 7.2 Lyapunov Functions and Derivatives
 
@@ -506,7 +506,7 @@ Both controllers track the step at $t = 2$ s when the mass is still close to $m_
 
 **Interpretation of Figure 3**
 
-$L_1(t)$ (top-left) decreases monotonically, confirming inequality (20). Its derivative $\dot{L}_1 = -k_1 e^2 - K\delta^2$ (top-right) is everywhere $\leq 0$, which is the analytical bound from equation (20). For the PD controller (bottom row), $L^{PD}(t)$ initially decreases after the step but stabilises at a nonzero value. Its derivative $\dot{L}^{PD}$ (bottom-right) becomes positive once $m(t)$ has decreased enough, showing that the term $(\mu-1)g\,v_e$ in equation (30) dominates and prevents convergence to zero.
+L₁(t) (top-left) decreases monotonically, confirming inequality (20). Its derivative dL₁/dt = −k₁e² − Kδ² (top-right) is everywhere ≤ 0, which is the analytical bound from equation (20). For the PD controller (bottom row), L<sup>PD</sup>(t) initially decreases after the step but stabilises at a nonzero value. Its derivative dL<sup>PD</sup>/dt (bottom-right) becomes positive once m(t) has decreased enough, showing that the term (μ−1)g·v_e in equation (30) dominates and prevents convergence to zero.
 
 ### 7.3 Tracking Error
 
@@ -520,7 +520,7 @@ $L_1(t)$ (top-left) decreases monotonically, confirming inequality (20). Its der
 
 **Interpretation**
 
-The backstepping error converges to zero after the initial transient following the step at $t=2$ s. The PD error also peaks at the step but then grows monotonically instead of returning to zero, which is the structural steady-state offset predicted by equation (31).
+The backstepping error converges to zero after the initial transient following the step at t = 2 s. The PD error also peaks at the step but then grows monotonically instead of returning to zero, which is the structural steady-state offset predicted by equation (31).
 
 ### 7.5 Thrust Profile
 
@@ -534,7 +534,7 @@ The backstepping error converges to zero after the initial transient following t
 
 **Interpretation of Figure 4**
 
-The backstepping controller gradually reduces thrust as $m(t)$ decreases: less force is needed to support the lighter rocket, following directly from equation (19). The PD controller maintains approximately constant thrust and cannot track the changing weight, consistent with the accumulating steady-state error.
+The backstepping controller gradually reduces thrust as m(t) decreases: less force is needed to support the lighter rocket, following directly from equation (19). The PD controller maintains approximately constant thrust and cannot track the changing weight, consistent with the accumulating steady-state error.
 
 ### 7.6 Phase Portrait
 
@@ -548,7 +548,7 @@ The backstepping controller gradually reduces thrust as $m(t)$ decreases: less f
 
 **Interpretation of Figure 5**
 
-The backstepping trajectory (left panel, coordinates $(e, \delta)$) spirals into the origin $(0,0)$ with a time gradient from dark to light, confirming convergence $(e,\delta)\to(0,0)$ proved in Section 4.2. Circle = start; star = finish. The PD trajectory (right panel, coordinates $(e, v_e)$) converges to a point with $e \approx 0.70$ m at $t=10$ s, visually confirming the steady-state offset derived in equation (31).
+The backstepping trajectory (left panel, coordinates (e, δ)) spirals into the origin (0, 0) with a time gradient from dark to light, confirming convergence (e, δ) → (0, 0) proved in Section 4.2. Circle = start; star = finish. The PD trajectory (right panel, coordinates (e, v_e)) converges to a point with e ≈ 0.70 m at t = 10 s, visually confirming the steady-state offset derived in equation (31).
 
 ---
 
@@ -556,19 +556,19 @@ The backstepping trajectory (left panel, coordinates $(e, \delta)$) spirals into
 
 ### 8.1 Necessity of Mass Compensation
 
-The PD controller fails in a **structural** way when the mass changes: it converges to the wrong altitude, and the steady-state error grows linearly with fuel burn. This failure cannot be fixed by retuning $k_p$ or $k_d$. The backstepping controller eliminates this failure by using $m(t)$ explicitly in the control law and canceling the time-varying coefficient exactly.
+The PD controller fails in a **structural** way when the mass changes: it converges to the wrong altitude, and the steady-state error grows linearly with fuel burn. This failure cannot be fixed by retuning k_p or k_d. The backstepping controller eliminates this failure by using m(t) explicitly in the control law and canceling the time-varying coefficient exactly.
 
 ### 8.2 What the Backstepping Controller Guarantees
 
-- **Lyapunov stability:** $L_1(t)$ is strictly decreasing, so $e(t)$ and $\delta(t)$ remain bounded for all time.
-- **Asymptotic state convergence:** $e(t) \to 0$ and $v_e(t) \to 0$ as $t \to \infty$, proven via LaSalle's Invariance Principle (Section 4.2).
-- **Mass-independent proof:** inequality (21) holds for all $t \geq 0$ without any assumption on the magnitude or rate of mass change, as long as $m(t) > 0$.
+- **Lyapunov stability:** L₁(t) is strictly decreasing, so e(t) and δ(t) remain bounded for all time.
+- **Asymptotic state convergence:** e(t) → 0 and v_e(t) → 0 as t → ∞, proven via LaSalle's Invariance Principle (Section 4.2).
+- **Mass-independent proof:** inequality (21) holds for all t ≥ 0 without any assumption on the magnitude or rate of mass change, as long as m(t) > 0.
 
 ### 8.3 Limitations
 
-- The mass model must be known exactly; an unknown burn rate $\beta$ would require adaptive extensions.
+- The mass model must be known exactly; an unknown burn rate β would require adaptive extensions.
 - The model is 1-D: attitude dynamics and aerodynamic drag are not included.
-- The constraint $T \geq 0$ is enforced by clipping; for very large initial errors this breaks the Lyapunov proof locally.
+- The constraint T ≥ 0 is enforced by clipping; for very large initial errors this breaks the Lyapunov proof locally.
 
 ---
 
