@@ -85,6 +85,18 @@ def path_smoothness(states: np.ndarray) -> float:
     return float(changes[-1]) if len(changes) else 0.0
 
 
+def cumulative_motion_smoothness(states: np.ndarray) -> np.ndarray:
+    if len(states) < 3:
+        return np.zeros(0)
+    second_difference = states[2:, :2] - 2.0 * states[1:-1, :2] + states[:-2, :2]
+    return np.cumsum(np.linalg.norm(second_difference, axis=1))
+
+
+def motion_smoothness(states: np.ndarray) -> float:
+    values = cumulative_motion_smoothness(states)
+    return float(values[-1]) if len(values) else 0.0
+
+
 def heading_aggressiveness(states: np.ndarray) -> float:
     if len(states) < 3:
         return 0.0

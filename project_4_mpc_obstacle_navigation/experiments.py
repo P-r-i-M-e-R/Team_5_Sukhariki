@@ -7,22 +7,24 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from environment import default_config, default_obstacles, default_robot_params, default_start_state, default_target
+from environment import Scenario, default_config, default_obstacles, default_robot_params, default_start_state, default_target
 from metrics import (
     average_progress_rate,
     boundary_violation_count,
     control_effort,
     cumulative_heading_change,
+    cumulative_motion_smoothness,
     goal_distance,
     heading_aggressiveness,
     lyapunov_value,
     min_obstacle_clearance,
+    motion_smoothness,
     path_length,
     path_smoothness,
     progress_efficiency,
     torque_energy,
 )
-from mpc_controller import LyapunovMPCController
+from mpc_controller import LyapunovMPCController, MPCWeights
 from potential_field_controller import ArtificialPotentialFieldController
 from robot_model import step_torque, step_velocity
 
@@ -39,6 +41,7 @@ class SimulationResult:
     obstacle_clearances: np.ndarray
     safety_margins: np.ndarray
     cumulative_heading_change: np.ndarray
+    cumulative_motion_smoothness: np.ndarray
     lyapunov_values: np.ndarray
     lyapunov_delta: np.ndarray
     final_distance: float
@@ -48,6 +51,7 @@ class SimulationResult:
     boundary_violations: int
     path_length: float
     path_smoothness: float
+    motion_smoothness: float
     heading_aggressiveness: float
     near_obstacle_events: int
     progress_efficiency: float
@@ -58,15 +62,18 @@ class SimulationResult:
     collision: bool
     reached: bool
     avg_compute_time: float
+    mpc_shifted_fallbacks: int = 0
+    mpc_emergency_actions: int = 0
+    mpc_infeasible_iterations: int = 0
 
 
-def run_mpc() -> SimulationResult:
-    config = default_config()
+def run_mpc(scenario: Scenario | None = None, weights: MPCWeights | None = None) -> SimulationResult:
+    config = default_config(scenario)
     robot_params = default_robot_params()
-    obstacles = default_obstacles()
-    target = default_target()
-    controller = LyapunovMPCController(config, robot_params, obstacles, target)
-    state = default_start_state()
+    obstacles = default_obstacles(scenario)
+    target = default_target(scenario)
+    controller = LyapunovMPCController(config, robot_params, obstacles, target, weights)
+    state = default_start_state(scenario)
     states = [state.copy()]
     controls = []
     costs = []
@@ -85,23 +92,27 @@ def run_mpc() -> SimulationResult:
         predicted.append(result.predicted_trajectory)
         if goal_distance(state, target) <= config.goal_tolerance:
             break
-    return build_result("Lyapunov MPC", states, controls, costs, predicted, compute_times, torque_mode=True)
+    result = build_result("MPC", states, controls, costs, predicted, compute_times, torque_mode=True, scenario=scenario)
+    result.mpc_shifted_fallbacks = controller.shifted_fallback_count
+    result.mpc_emergency_actions = controller.emergency_count
+    result.mpc_infeasible_iterations = controller.infeasible_iteration_count
+    return result
 
 
-def run_apf() -> SimulationResult:
-    config = default_config()
+def run_apf(scenario: Scenario | None = None) -> SimulationResult:
+    config = default_config(scenario)
     robot_params = default_robot_params()
-    obstacles = default_obstacles()
-    target = default_target()
+    obstacles = default_obstacles(scenario)
+    target = default_target(scenario)
     controller = ArtificialPotentialFieldController(config, robot_params, obstacles, target)
-    return run_velocity_controller("APF baseline", controller, torque_mode=False)
+    return run_velocity_controller("APF baseline", controller, torque_mode=False, scenario=scenario)
 
 
-def run_velocity_controller(name: str, controller, torque_mode: bool) -> SimulationResult:
-    config = default_config()
+def run_velocity_controller(name: str, controller, torque_mode: bool, scenario: Scenario | None = None) -> SimulationResult:
+    config = default_config(scenario)
     robot_params = default_robot_params()
-    target = default_target()
-    state = default_start_state()
+    target = default_target(scenario)
+    state = default_start_state(scenario)
     states = [state.copy()]
     controls = []
     costs = []
@@ -118,7 +129,7 @@ def run_velocity_controller(name: str, controller, torque_mode: bool) -> Simulat
         costs.append(goal_distance(state, target) ** 2)
         if goal_distance(state, target) <= config.goal_tolerance:
             break
-    return build_result(name, states, controls, costs, [], compute_times, torque_mode=torque_mode)
+    return build_result(name, states, controls, costs, [], compute_times, torque_mode=torque_mode, scenario=scenario)
 
 
 def build_result(
@@ -129,10 +140,11 @@ def build_result(
     predicted,
     compute_times,
     torque_mode: bool,
+    scenario: Scenario | None = None,
 ) -> SimulationResult:
-    config = default_config()
-    target = default_target()
-    obstacles = default_obstacles()
+    config = default_config(scenario)
+    target = default_target(scenario)
+    obstacles = default_obstacles(scenario)
     states = np.array(states, dtype=float)
     controls = np.array(controls, dtype=float)
     costs = np.array(costs, dtype=float)
@@ -160,6 +172,7 @@ def build_result(
         obstacle_clearances=clearances,
         safety_margins=safety_margins,
         cumulative_heading_change=cumulative_heading_change(states),
+        cumulative_motion_smoothness=cumulative_motion_smoothness(states),
         lyapunov_values=lyapunov,
         lyapunov_delta=delta,
         final_distance=final_distance,
@@ -169,6 +182,7 @@ def build_result(
         boundary_violations=boundary_violation_count(states, config.map_bounds, config.robot_radius),
         path_length=total_path_length,
         path_smoothness=path_smoothness(states),
+        motion_smoothness=motion_smoothness(states),
         heading_aggressiveness=heading_aggressiveness(states),
         near_obstacle_events=int(np.sum(clearances < 0.45)),
         progress_efficiency=progress_efficiency(states, target, total_path_length),
@@ -182,7 +196,7 @@ def build_result(
     )
 
 
-def run_all() -> dict[str, SimulationResult]:
-    mpc = run_mpc()
-    apf = run_apf()
+def run_all(scenario: Scenario | None = None) -> dict[str, SimulationResult]:
+    mpc = run_mpc(scenario)
+    apf = run_apf(scenario)
     return {"mpc": mpc, "apf": apf}

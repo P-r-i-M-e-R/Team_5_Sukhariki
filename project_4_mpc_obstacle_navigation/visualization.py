@@ -14,7 +14,7 @@ from matplotlib.patches import Arc, FancyArrowPatch, FancyBboxPatch
 from matplotlib.transforms import Affine2D
 import numpy as np
 
-from environment import default_config, default_obstacles, default_start_state, default_target
+from environment import Scenario, default_config, default_obstacles, default_start_state, default_target
 
 
 def ensure_dirs() -> Path:
@@ -27,11 +27,11 @@ def obstacle_path(obstacle, times: np.ndarray) -> np.ndarray:
     return obstacle.positions_at(times)
 
 
-def draw_map(ax, times: np.ndarray | None = None) -> None:
-    obstacles = default_obstacles()
-    target = default_target()
-    start = default_start_state()
-    config = default_config()
+def draw_map(ax, times: np.ndarray | None = None, scenario: Scenario | None = None) -> None:
+    obstacles = default_obstacles(scenario)
+    target = default_target(scenario)
+    start = default_start_state(scenario)
+    config = default_config(scenario)
     x_min, x_max, y_min, y_max = config.map_bounds
     if times is None:
         times = np.linspace(0.0, config.max_steps * config.dt, 100)
@@ -119,7 +119,7 @@ def plot_robot_schematic(filename: str | Path) -> None:
         color="#2ca02c",
     )
     ax.add_patch(omega_arrow)
-    ax.annotate(r"$\omega$", omega_center + np.array([0.12, 0.28]), color="#2ca02c", fontsize=13, weight="bold")
+    ax.annotate(r"$\omega$", omega_center + np.array([0.16, 0.46]), color="#2ca02c", fontsize=13, weight="bold")
 
     left_arrow_start = rotate((-0.34, 0.92))
     left_arrow_delta = rotate((0.52, 0.92)) - left_arrow_start
@@ -141,9 +141,9 @@ def plot_robot_schematic(filename: str | Path) -> None:
     plt.close(fig)
 
 
-def plot_comparison_trajectories(results: list, filename: str | Path) -> None:
+def plot_comparison_trajectories(results: list, filename: str | Path, scenario: Scenario | None = None) -> None:
     fig, ax = plt.subplots(figsize=(8.3, 6.1))
-    draw_map(ax, results[0].times)
+    draw_map(ax, results[0].times, scenario)
     colors = ["#1f77b4", "#d627a4"]
     for result, color in zip(results, colors):
         ax.plot(result.states[:, 0], result.states[:, 1], linewidth=2.4, color=color, label=result.name)
@@ -154,14 +154,21 @@ def plot_comparison_trajectories(results: list, filename: str | Path) -> None:
     plt.close(fig)
 
 
-def plot_time_comparison(results: list, attr: str, ylabel: str, title: str, filename: str | Path) -> None:
+def plot_time_comparison(
+    results: list,
+    attr: str,
+    ylabel: str,
+    title: str,
+    filename: str | Path,
+    scenario: Scenario | None = None,
+) -> None:
     fig, ax = plt.subplots(figsize=(8, 4.3))
     for result in results:
         ax.plot(result.times[: len(getattr(result, attr))], getattr(result, attr), linewidth=2.1, label=result.name)
     if "clearance" in attr or "margin" in attr:
         ax.axhline(0.0, color="black", linestyle="--", linewidth=1.0)
     if "goal" in attr:
-        ax.axhline(default_config().goal_tolerance, color="black", linestyle="--", linewidth=1.0)
+        ax.axhline(default_config(scenario).goal_tolerance, color="black", linestyle="--", linewidth=1.0)
     ax.set_xlabel("time [s]")
     ax.set_ylabel(ylabel)
     ax.set_title(title)
@@ -173,23 +180,28 @@ def plot_time_comparison(results: list, attr: str, ylabel: str, title: str, file
 
 
 def plot_heading_change(results: list, filename: str | Path) -> None:
-    fig, ax = plt.subplots(figsize=(8, 4.3))
+    fig, axes = plt.subplots(2, 1, figsize=(8, 6.2), sharex=True)
     for result in results:
         times = result.times[1 : len(result.cumulative_heading_change) + 1]
-        ax.plot(times, result.cumulative_heading_change, linewidth=2.1, label=result.name)
-    ax.set_xlabel("time [s]")
-    ax.set_ylabel("cumulative |heading change| [rad]")
-    ax.set_title("Path smoothness comparison")
-    ax.grid(True, alpha=0.3)
-    ax.legend()
+        axes[0].plot(times, result.cumulative_heading_change, linewidth=2.1, label=result.name)
+        smooth_times = result.times[2 : len(result.cumulative_motion_smoothness) + 2]
+        axes[1].plot(smooth_times, result.cumulative_motion_smoothness, linewidth=2.1, label=result.name)
+    axes[0].set_ylabel("cumulative |heading change| [rad]")
+    axes[0].set_title("Motion smoothness comparison")
+    axes[0].grid(True, alpha=0.3)
+    axes[0].legend()
+    axes[1].set_xlabel("time [s]")
+    axes[1].set_ylabel("second-difference smoothness [m]")
+    axes[1].grid(True, alpha=0.3)
+    axes[1].legend()
     fig.tight_layout()
     fig.savefig(filename, dpi=180)
     plt.close(fig)
 
 
-def plot_control_effort(results: list, filename: str | Path) -> None:
+def plot_control_effort(results: list, filename: str | Path, scenario: Scenario | None = None) -> None:
     fig, ax = plt.subplots(figsize=(8, 4.3))
-    dt = default_config().dt
+    dt = default_config(scenario).dt
     for result in results:
         effort = np.cumsum(np.sum(result.controls**2, axis=1)) * dt
         ax.plot(result.times[:-1], effort, linewidth=2.1, label=result.name)
@@ -203,11 +215,44 @@ def plot_control_effort(results: list, filename: str | Path) -> None:
     plt.close(fig)
 
 
-def create_comparison_gif(results: list, filename: str | Path) -> None:
-    obstacles = default_obstacles()
-    target = default_target()
-    start = default_start_state()
-    config = default_config()
+def plot_energy_weight_study(records: list[dict], filename: str | Path) -> None:
+    weights = np.array([record["weight"] for record in records], dtype=float)
+    energy = np.array([record["torque_energy"] for record in records], dtype=float)
+    time_to_goal = np.array([record["time_to_goal"] for record in records], dtype=float)
+    path_length = np.array([record["path_length"] for record in records], dtype=float)
+    final_distance = np.array([record["final_distance"] for record in records], dtype=float)
+
+    fig, axes = plt.subplots(2, 2, figsize=(9.2, 6.6))
+    axes[0, 0].plot(weights, energy, marker="o", linewidth=2.0)
+    axes[0, 0].set_ylabel("motor energy proxy")
+    axes[0, 0].set_title("Energy use")
+
+    axes[0, 1].plot(weights, time_to_goal, marker="o", linewidth=2.0)
+    axes[0, 1].set_ylabel("time to goal [s]")
+    axes[0, 1].set_title("Travel time")
+
+    axes[1, 0].plot(weights, path_length, marker="o", linewidth=2.0)
+    axes[1, 0].set_ylabel("path length [m]")
+    axes[1, 0].set_xlabel("energy weight")
+    axes[1, 0].set_title("Path length")
+
+    axes[1, 1].plot(weights, final_distance, marker="o", linewidth=2.0)
+    axes[1, 1].set_ylabel("final distance [m]")
+    axes[1, 1].set_xlabel("energy weight")
+    axes[1, 1].set_title("Goal accuracy")
+
+    for ax in axes.flat:
+        ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(filename, dpi=180)
+    plt.close(fig)
+
+
+def create_comparison_gif(results: list, filename: str | Path, scenario: Scenario | None = None) -> None:
+    obstacles = default_obstacles(scenario)
+    target = default_target(scenario)
+    start = default_start_state(scenario)
+    config = default_config(scenario)
     x_min, x_max, y_min, y_max = config.map_bounds
     colors = ["#1f77b4", "#d627a4"]
     labels = [result.name for result in results]
