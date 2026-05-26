@@ -285,15 +285,23 @@ where $m_{\mathrm{safe},k}$ is the minimum obstacle clearance at step $k$, $p_k$
 Near-obstacle events are counted as
 
 ```math
-N_{\mathrm{near}}=\sum_{k=0}^{T}\mathbf{1}\left[m_{\mathrm{safe},k}<m_{\mathrm{threshold}}\right] \qquad\text{(29)}
+N_{\mathrm{near}} = \sum_{k=0}^{T} I_k \qquad\text{(29)}
 ```
 
-where $N_{\mathrm{near}}$ is the number of near-obstacle events, $\mathbf{1}[\cdot]$ is the indicator function, $m_{\mathrm{safe},k}$ is the minimum obstacle clearance, and $m_{\mathrm{threshold}}=0.45$ m is the implemented near-obstacle threshold.
+where $N_{\mathrm{near}}$ is the number of near-obstacle events, and $I_k$ is the binary indicator at step $k$.
+
+The binary indicator is
+
+```math
+I_k = 1\;\mathrm{if}\;m_{\mathrm{safe},k}<m_{\mathrm{threshold}},\;\mathrm{and}\;I_k = 0\;\mathrm{otherwise} \qquad\text{(30)}
+```
+
+where $m_{\mathrm{safe},k}$ is the minimum obstacle clearance at step $k$, and $m_{\mathrm{threshold}}=0.45$ m is the implemented near-obstacle threshold.
 
 The energy study uses the grid
 
 ```math
-w_{\mathrm{energy}}\in\{0.00,0.03,0.06,\ldots,0.60\} \qquad\text{(30)}
+w_{\mathrm{energy}}\in\{0.00,0.03,0.06,\ldots,0.60\} \qquad\text{(31)}
 ```
 
 where $w_{\mathrm{energy}}$ is the weight of the motor-energy term in the MPC cost. The implementation evaluates 21 values.
@@ -301,7 +309,7 @@ where $w_{\mathrm{energy}}$ is the weight of the motor-energy term in the MPC co
 The motor energy proxy is
 
 ```math
-E_{\mathrm{motor}}=\sum_{k=0}^{T-1}(\tau_{R,k}^2+\tau_{L,k}^2)\Delta t \qquad\text{(31)}
+E_{\mathrm{motor}}=\sum_{k=0}^{T-1}(\tau_{R,k}^2+\tau_{L,k}^2)\Delta t \qquad\text{(32)}
 ```
 
 where $E_{\mathrm{motor}}$ is the torque-based motor-energy proxy, $\tau_{R,k}$ and $\tau_{L,k}$ are applied right and left wheel torques, and $\Delta t$ is the simulation time step.
