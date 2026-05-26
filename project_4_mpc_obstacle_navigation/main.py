@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import numpy as np
+
 from environment import default_robot_params, default_target, scenarios, validate_obstacle_layout
 from experiments import run_all, run_mpc
 from mpc_controller import LyapunovMPCController, MPCWeights
@@ -64,7 +66,7 @@ def print_terminal_decrease_check(scenario) -> None:
 
 
 def run_energy_study(scenario) -> list[dict]:
-    weights = [0.0, 0.01, 0.05, 0.1, 0.2, 0.5]
+    weights = np.round(np.linspace(0.0, 0.60, 21), 2)
     records = []
     for weight in weights:
         result = run_mpc(scenario, weights=MPCWeights(energy=weight))

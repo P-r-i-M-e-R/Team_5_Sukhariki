@@ -24,249 +24,193 @@
 
 **Figure 1.** Differential-drive robot model with center position, heading, linear velocity, angular velocity, and wheel torque inputs.
 
-The state vector is
+The robot state is
 
-$$
-x_k=\begin{bmatrix}p_{x,k}&p_{y,k}&\theta_k&v_k&\omega_k\end{bmatrix}^{T}.
-\tag{1}
-$$
+```math
+x_k = [p_{x,k},\;p_{y,k},\;\theta_k,\;v_k,\;\omega_k]^T \qquad\text{(1)}
+```
 
-where:
-
-- $x_k$ is the robot state at time step $k$;
-- $p_{x,k}$ and $p_{y,k}$ are planar coordinates;
-- $\theta_k$ is the heading angle;
-- $v_k$ is the linear velocity;
-- $\omega_k$ is the angular velocity.
+where $x_k$ is the robot state at discrete step $k$, $p_{x,k}$ and $p_{y,k}$ are the robot coordinates in meters, $\theta_k$ is the heading angle in radians, $v_k$ is the linear velocity, and $\omega_k$ is the angular velocity.
 
 The MPC control input is
 
-$$
-u_k=\begin{bmatrix}\tau_{R,k}&\tau_{L,k}\end{bmatrix}^{T}.
-\tag{2}
-$$
+```math
+u_k = [\tau_{R,k},\;\tau_{L,k}]^T \qquad\text{(2)}
+```
 
-where:
+where $u_k$ is the control input, $\tau_{R,k}$ is the right wheel torque, and $\tau_{L,k}$ is the left wheel torque.
 
-- $u_k$ is the wheel torque input;
-- $\tau_{R,k}$ is the right wheel torque;
-- $\tau_{L,k}$ is the left wheel torque.
+The discrete robot model used in `robot_model.py` is
 
-The simplified torque dynamics are
+```math
+p_{x,k+1} = p_{x,k} + v_k \cos(\theta_k)\Delta t \qquad\text{(3)}
+```
 
-$$
-\dot v=k_v(\tau_R+\tau_L)-c_vv.
-\tag{3}
-$$
+where $p_{x,k}$ is the current x-coordinate, $v_k$ is the linear velocity, $\theta_k$ is the heading angle, and $\Delta t$ is the simulation time step.
 
-where:
+```math
+p_{y,k+1} = p_{y,k} + v_k \sin(\theta_k)\Delta t \qquad\text{(4)}
+```
 
-- $\dot v$ is the linear acceleration;
-- $k_v=0.85$ is the torque-to-acceleration gain;
-- $\tau_R$ and $\tau_L$ are wheel torques;
-- $c_v=0.55$ is the linear damping coefficient;
-- $v$ is the current linear velocity.
+where $p_{y,k}$ is the current y-coordinate, $v_k$ is the linear velocity, $\theta_k$ is the heading angle, and $\Delta t$ is the simulation time step.
 
-The angular acceleration is
+```math
+\theta_{k+1} = \theta_k + \omega_k\Delta t \qquad\text{(5)}
+```
 
-$$
-\dot\omega=k_\omega(\tau_R-\tau_L)-c_\omega\omega.
-\tag{4}
-$$
+where $\theta_k$ is the current heading angle, $\omega_k$ is the angular velocity, and $\Delta t$ is the simulation time step. The implementation wraps the updated angle to the interval $[-\pi,\pi]$.
 
-where:
+```math
+v_{k+1} = v_k + \left(k_v(\tau_{R,k}+\tau_{L,k}) - c_v v_k\right)\Delta t \qquad\text{(6)}
+```
 
-- $\dot\omega$ is the angular acceleration;
-- $k_\omega=1.25$ is the angular torque gain;
-- $\tau_R-\tau_L$ is the torque difference;
-- $c_\omega=0.65$ is the angular damping coefficient;
-- $\omega$ is the angular velocity.
+where $v_k$ is the current linear velocity, $k_v=0.85$ is the longitudinal acceleration gain, $\tau_{R,k}$ and $\tau_{L,k}$ are wheel torques, $c_v=0.55$ is the linear damping coefficient, and $\Delta t$ is the simulation time step.
 
-The planar kinematics are
+```math
+\omega_{k+1} = \omega_k + \left(k_\omega(\tau_{R,k}-\tau_{L,k}) - c_\omega\omega_k\right)\Delta t \qquad\text{(7)}
+```
 
-$$
-\dot p_x=v\cos\theta,\qquad \dot p_y=v\sin\theta,\qquad \dot\theta=\omega.
-\tag{5}
-$$
-
-where:
-
-- $\dot p_x$ and $\dot p_y$ are Cartesian velocity components;
-- $v$ is the linear velocity;
-- $\theta$ is the heading angle;
-- $\dot\theta$ is the heading rate;
-- $\omega$ is the angular velocity.
-
-The code uses Euler integration:
-
-$$
-\begin{aligned}
-p_{x,k+1}&=p_{x,k}+v_k\cos(\theta_k)\Delta t,\\
-p_{y,k+1}&=p_{y,k}+v_k\sin(\theta_k)\Delta t,\\
-\theta_{k+1}&=\operatorname{wrap}(\theta_k+\omega_k\Delta t),\\
-v_{k+1}&=\operatorname{clip}(v_k+\dot v_k\Delta t,-v_{\max},v_{\max}),\\
-\omega_{k+1}&=\operatorname{clip}(\omega_k+\dot\omega_k\Delta t,-\omega_{\max},\omega_{\max}).
-\end{aligned}
-\tag{6}
-$$
-
-where:
-
-- $\Delta t=0.15$ s is the time step;
-- $v_{\max}=1.35$ m/s is the velocity bound;
-- $\omega_{\max}=1.9$ rad/s is the angular velocity bound;
-- $\operatorname{wrap}$ maps angles to $[-\pi,\pi]$;
-- $\operatorname{clip}$ applies the stated bounds.
+where $\omega_k$ is the current angular velocity, $k_\omega=1.25$ is the angular acceleration gain, $\tau_{R,k}-\tau_{L,k}$ is the torque difference, $c_\omega=0.65$ is the angular damping coefficient, and $\Delta t$ is the simulation time step.
 
 ---
 
 ## 3. Obstacle Model and Constraints
 
-Each obstacle is circular. Static obstacles have zero velocity, while moving obstacles follow known deterministic motion:
+Map boundary constraints are enforced with the robot radius included:
 
-$$
-c_j(t)=c_{j,0}+\nu_jt.
-\tag{7}
-$$
+```math
+x_{\min}+r_{\mathrm{robot}} \le p_x \le x_{\max}-r_{\mathrm{robot}} \qquad\text{(8)}
+```
 
-where:
+where $x_{\min}$ and $x_{\max}$ are the map bounds along the x-axis, $p_x$ is the robot x-coordinate, and $r_{\mathrm{robot}}$ is the robot radius.
 
-- $c_j(t)$ is the center of obstacle $j$ at time $t$;
-- $c_{j,0}$ is its initial center;
-- $\nu_j$ is its velocity vector;
-- $t$ is time.
+```math
+y_{\min}+r_{\mathrm{robot}} \le p_y \le y_{\max}-r_{\mathrm{robot}} \qquad\text{(9)}
+```
 
-The predicted safe set is
+where $y_{\min}$ and $y_{\max}$ are the map bounds along the y-axis, $p_y$ is the robot y-coordinate, and $r_{\mathrm{robot}}$ is the robot radius.
 
-$$
-\begin{aligned}
-\mathcal X_{\mathrm{safe}}(t)=\{x:\;&x_{\min}+r_{\mathrm{robot}}\le p_x\le x_{\max}-r_{\mathrm{robot}},\\
-&y_{\min}+r_{\mathrm{robot}}\le p_y\le y_{\max}-r_{\mathrm{robot}},\\
-&\|p-c_j(t)\|\ge r_{\mathrm{robot}}+r_j+r_{\mathrm{margin}}\;\text{for all }j,\\
-&|v|\le v_{\max},\;|\omega|\le\omega_{\max}\}.
-\end{aligned}
-\tag{8}
-$$
+The predicted obstacle clearance constraint is
 
-where:
+```math
+\|p_k - c_{j,k}\| \ge r_{\mathrm{robot}} + r_j + r_{\mathrm{margin}} \qquad\text{(10)}
+```
 
-- $\mathcal X_{\mathrm{safe}}(t)$ is the time-dependent safe set;
-- $p=[p_x,p_y]^T$ is robot position;
-- $x_{\min},x_{\max},y_{\min},y_{\max}$ are map bounds;
-- $r_{\mathrm{robot}}=0.18$ m is the robot radius;
-- $r_j$ is obstacle radius;
-- $r_{\mathrm{margin}}=0.12$ m is the safety buffer.
+where $p_k=[p_{x,k},p_{y,k}]^T$ is the robot position, $c_{j,k}$ is the center of obstacle $j$ at step $k$, $r_j$ is the obstacle radius, and $r_{\mathrm{margin}}=0.12$ m is the additional safety margin.
 
-The torque constraints are
+The velocity constraints are
 
-$$
--\tau_{\max}\le \tau_{R,k}\le\tau_{\max},\qquad
--\tau_{\max}\le \tau_{L,k}\le\tau_{\max}.
-\tag{9}
-$$
+```math
+0 \le v_k \le v_{\max} \qquad\text{(11)}
+```
 
-where:
+where $v_k$ is the robot linear velocity and $v_{\max}=1.35$ m/s is the maximum allowed forward velocity.
 
-- $\tau_{\max}=1.35$ is the maximum absolute wheel torque;
-- $\tau_{R,k}$ and $\tau_{L,k}$ are right and left wheel torques.
+```math
+-\omega_{\max} \le \omega_k \le \omega_{\max} \qquad\text{(12)}
+```
+
+where $\omega_k$ is the robot angular velocity and $\omega_{\max}=1.9$ rad/s is the maximum allowed absolute angular velocity.
+
+The wheel torque constraints are
+
+```math
+-\tau_{\max} \le \tau_{R,k} \le \tau_{\max} \qquad\text{(13)}
+```
+
+where $\tau_{R,k}$ is the right wheel torque and $\tau_{\max}=1.35$ is the maximum allowed torque magnitude.
+
+```math
+-\tau_{\max} \le \tau_{L,k} \le \tau_{\max} \qquad\text{(14)}
+```
+
+where $\tau_{L,k}$ is the left wheel torque and $\tau_{\max}=1.35$ is the maximum allowed torque magnitude.
+
+Moving obstacles have deterministic constant-velocity motion:
+
+```math
+c_j(t) = c_{j,0} + v_j t \qquad\text{(15)}
+```
+
+where $c_j(t)$ is the center of moving obstacle $j$ at time $t$, $c_{j,0}$ is its initial position, and $v_j$ is its constant velocity vector.
+
+The implementation validates every map before simulation by sampling the full time interval and checking static-static, static-moving, and moving-moving disk separation.
 
 ---
 
 ## 4. MPC Design
 
-At each time step, the controller optimizes a finite sequence:
+The finite-horizon objective is
 
-$$
-U_k=\{u_{0|k},u_{1|k},\ldots,u_{N-1|k}\}.
-\tag{10}
-$$
+```math
+J_N(x_k,U_k)=\sum_{i=0}^{N-1}\ell(x_{i|k},u_{i|k}) + J_f(x_{N|k}) \qquad\text{(16)}
+```
 
-where:
+where $J_N$ is the finite-horizon MPC cost, $x_k$ is the current state, $U_k$ is the candidate control sequence, $\ell$ is the stage cost, $J_f$ is the terminal cost, and $N=50$ is the prediction horizon.
 
-- $U_k$ is the planned input sequence;
-- $u_{i|k}$ is the predicted input at horizon index $i$;
-- $N=50$ is the prediction horizon.
+The stage cost is written compactly as
 
-The finite-horizon cost is
+```math
+\ell(x_{i|k},u_{i|k}) = w_g J_g + w_o J_o + w_e J_e + w_s J_s + w_p J_p \qquad\text{(17)}
+```
 
-$$
-J_N(x_k,U_k)=\sum_{i=0}^{N-1}\ell(\hat x_{i|k},u_{i|k})+E_f(\hat x_{N|k}).
-\tag{11}
-$$
+where $J_g$ is the goal-tracking term, $J_o$ is the obstacle and boundary shaping term, $J_e$ is the energy-related term, $J_s$ is the smoothness term, $J_p$ is the path-efficiency term, and $w_g,w_o,w_e,w_s,w_p$ are positive weights. Hard safety, input, velocity, and terminal feasibility checks are applied before this cost is used for comparison.
 
-where:
+Goal tracking is
 
-- $J_N$ is the finite-horizon objective;
-- $\ell(\hat x_{i|k},u_{i|k})$ is the stage cost;
-- $E_f(\hat x_{N|k})$ is the terminal error cost;
-- $\hat x_{i|k}$ is the predicted state.
+```math
+J_g = \|p_{i|k}-p_{\mathrm{goal}}\|^2 \qquad\text{(18)}
+```
 
-The energy term is
+where $J_g$ is the predicted position error, $p_{i|k}$ is the predicted robot position at horizon index $i$, and $p_{\mathrm{goal}}$ is the goal position.
 
-$$
-J_{\mathrm{energy}}=w_E\sum_{i=0}^{N-1}(\tau_{R,i|k}^{2}+\tau_{L,i|k}^{2})\Delta t.
-\tag{12}
-$$
+The motor-energy term is
 
-where:
+```math
+J_e = (\tau_{R,i|k}^2+\tau_{L,i|k}^2)\Delta t \qquad\text{(19)}
+```
 
-- $J_{\mathrm{energy}}$ is the motor-energy proxy in the cost;
-- $w_E$ is the energy penalty weight;
-- $\tau_{R,i|k}$ and $\tau_{L,i|k}$ are predicted wheel torques;
-- $\Delta t$ is the time step.
+where $J_e$ is the torque-based energy proxy for one prediction step, $\tau_{R,i|k}$ and $\tau_{L,i|k}$ are the predicted wheel torques, and $\Delta t$ is the simulation time step.
 
-The implemented stage cost also includes goal tracking, terminal goal error, path length, torque effort, control smoothness, obstacle shaping, and boundary shaping. Hard feasibility is handled separately: candidate trajectories violating (8), (9), velocity bounds, or the terminal constraint are rejected before cost comparison.
+The smoothness term is
 
-The terminal error metric used for the terminal constraint is
+```math
+J_s = \|u_{i|k}-u_{i-1|k}\|^2 \qquad\text{(20)}
+```
 
-$$
-E(x)=\frac{1}{2}\|p-p_g\|^2+\frac{1}{2}q_\theta e_\theta^2+\frac{1}{2}q_vv^2+\frac{1}{2}q_\omega\omega^2.
-\tag{13}
-$$
+where $J_s$ penalizes changes in the planned input sequence, $u_{i|k}$ is the predicted control input, and $u_{i-1|k}$ is the previous predicted control input. For the first horizon step, the previous applied control is used.
 
-where:
+The terminal cost is
 
-- $E(x)$ is the terminal error metric;
-- $p$ is robot position;
-- $p_g$ is the goal position;
-- $e_\theta$ is the heading error to the goal direction;
-- $q_\theta=0.60$, $q_v=0.18$, and $q_\omega=0.12$ are positive weights.
+```math
+J_f(x_{N|k}) = w_f\|p_{N|k}-p_{\mathrm{goal}}\|^2 \qquad\text{(21)}
+```
 
-The terminal set is
+where $J_f$ is the terminal position cost, $p_{N|k}$ is the predicted terminal position, $p_{\mathrm{goal}}$ is the goal position, and $w_f$ is the terminal cost weight.
 
-$$
-\mathcal S_{\mathrm{term}}=\{x:E(x)\le\rho_{\mathrm{term}}\}.
-\tag{14}
-$$
-
-where:
-
-- $\mathcal S_{\mathrm{term}}$ is the terminal set;
-- $E(x)$ is the terminal error metric from (13);
-- $\rho_{\mathrm{term}}=2.0$ is the implemented terminal threshold.
-
-The shifted candidate sequence used for recursive feasibility logic is
-
-$$
-U_{k+1}^{\mathrm{cand}}=\{u^*_{1|k},u^*_{2|k},\ldots,u^*_{N-1|k},\eta(x^*_{N|k})\}.
-\tag{15}
-$$
-
-where:
-
-- $U_{k+1}^{\mathrm{cand}}$ is the candidate sequence at the next step;
-- $u^*_{i|k}$ are inputs from the previous accepted sequence;
-- $\eta(x^*_{N|k})$ is the local terminal policy applied at the previous terminal state.
-
-In the implemented runs, candidate sequences are checked against the safe set, input bounds, velocity bounds, and terminal set. The shifted sequence is included as a fallback candidate. If dynamic obstacle predictions make the shifted sequence infeasible, an emergency braking sequence is available and logged. In the final five-map validation, emergency action count is zero.
-
-This gives a practical version of the lecture guarantee logic: with accurate obstacle predictions over the horizon, a reachable terminal set, and enough candidate resolution to find a feasible sequence, the controller preserves constraint satisfaction in simulation and repeatedly drives the robot toward the goal. This is not a global proof for every possible dynamic-obstacle scene; it is a constraint-based MPC design validated on the five tested maps.
+In each MPC step, the controller samples candidate torque sequences, rolls out the model, rejects candidates that violate the hard constraints, evaluates only feasible candidates, applies the first torque input, and stores the feasible sequence for warm starting the next step.
 
 ---
 
 ## 5. APF Baseline
 
 The APF controller commands linear and angular velocity directly. It combines attraction to the goal with local repulsion from current obstacle positions. It does not predict future obstacle positions and does not optimize wheel torques over a horizon. This makes APF computationally light but more reactive in moving-obstacle scenarios.
+
+The attractive potential is
+
+```math
+U_{\mathrm{att}}(p)=\frac{1}{2}k_{\mathrm{att}}\|p-p_{\mathrm{goal}}\|^2 \qquad\text{(22)}
+```
+
+where $U_{\mathrm{att}}$ is the attractive potential, $k_{\mathrm{att}}$ is the attraction gain, $p$ is the robot position, and $p_{\mathrm{goal}}$ is the goal position.
+
+The repulsive potential is
+
+```math
+U_{\mathrm{rep},j}(p)=\frac{1}{2}k_{\mathrm{rep}}\left(\frac{1}{d_j(p)}-\frac{1}{d_0}\right)^2 \qquad\text{(23)}
+```
+
+where $U_{\mathrm{rep},j}$ is the repulsive potential from obstacle $j$, $k_{\mathrm{rep}}$ is the repulsion gain, $d_j(p)$ is the distance to obstacle $j$, and $d_0$ is the repulsion radius. This repulsive term is active only when $d_j(p)<d_0$.
 
 ---
 
@@ -283,7 +227,7 @@ The APF controller commands linear and angular velocity directly. It combines at
 
 ---
 
-## 7. Simulation Setup
+## 7. Simulation Setup and Metrics
 
 | Quantity | Value |
 |---|---:|
@@ -298,45 +242,69 @@ The APF controller commands linear and angular velocity directly. It combines at
 | MPC horizon | 50 |
 | Torque limit | 1.35 |
 
-Motion smoothness is measured by
+Path length is
 
-$$
-S_p=\sum_{k=1}^{K-1}\|p_{k+1}-2p_k+p_{k-1}\|.
-\tag{16}
-$$
+```math
+L_{\mathrm{path}} = \sum_{k=0}^{T-1}\|p_{k+1}-p_k\| \qquad\text{(24)}
+```
 
-where:
-
-- $S_p$ is the cumulative second-difference smoothness metric;
-- $p_{k-1}$, $p_k$, and $p_{k+1}$ are consecutive robot positions;
-- lower $S_p$ means smoother motion.
+where $L_{\mathrm{path}}$ is the total path length, $p_k$ is the robot position at step $k$, and $T$ is the final simulated step index.
 
 Path efficiency is
 
-$$
-\eta=\frac{\|p_g-p_0\|}{L}.
-\tag{17}
-$$
+```math
+\eta_{\mathrm{path}}=\frac{\|p_{\mathrm{goal}}-p_0\|}{L_{\mathrm{path}}} \qquad\text{(25)}
+```
 
-where:
+where $\eta_{\mathrm{path}}$ is the path efficiency, $p_{\mathrm{goal}}$ is the goal position, $p_0$ is the initial position, and $L_{\mathrm{path}}$ is the total path length.
 
-- $\eta$ is path efficiency;
-- $p_g$ is the goal position;
-- $p_0$ is the initial position;
-- $L$ is total traveled path length.
+The position-based smoothness metric is
+
+```math
+S_{\mathrm{pos}}=\sum_{k=1}^{T-2}\|p_{k+1}-2p_k+p_{k-1}\| \qquad\text{(26)}
+```
+
+where $S_{\mathrm{pos}}$ is the position-based smoothness metric, $p_{k-1}$, $p_k$, and $p_{k+1}$ are consecutive robot positions, and lower values indicate smoother motion.
 
 Control effort is
 
-$$
-E_u=\sum_{k=0}^{K-1}\|u_k\|^2\Delta t.
-\tag{18}
-$$
+```math
+E_{\mathrm{ctrl}}=\sum_{k=0}^{T-1}\|u_k\|^2\Delta t \qquad\text{(27)}
+```
 
-where:
+where $E_{\mathrm{ctrl}}$ is the cumulative control effort, $u_k$ is the applied input, and $\Delta t$ is the simulation time step. For MPC, $u_k$ is a torque input; for APF, $u_k$ is a velocity command.
 
-- $E_u$ is cumulative control effort;
-- $u_k$ is a wheel-torque input for MPC or a velocity command for APF;
-- $\Delta t$ is the simulation time step.
+Safety margin is
+
+```math
+m_{\mathrm{safe},k}=\min_j\left(\|p_k-c_{j,k}\|-r_{\mathrm{robot}}-r_j\right) \qquad\text{(28)}
+```
+
+where $m_{\mathrm{safe},k}$ is the minimum obstacle clearance at step $k$, $p_k$ is the robot position, $c_{j,k}$ is the center of obstacle $j$, $r_{\mathrm{robot}}$ is the robot radius, and $r_j$ is the obstacle radius.
+
+Near-obstacle events are counted as
+
+```math
+N_{\mathrm{near}}=\sum_{k=0}^{T}\mathbf{1}\left[m_{\mathrm{safe},k}<m_{\mathrm{threshold}}\right] \qquad\text{(29)}
+```
+
+where $N_{\mathrm{near}}$ is the number of near-obstacle events, $\mathbf{1}[\cdot]$ is the indicator function, $m_{\mathrm{safe},k}$ is the minimum obstacle clearance, and $m_{\mathrm{threshold}}=0.45$ m is the implemented near-obstacle threshold.
+
+The energy study uses the grid
+
+```math
+w_{\mathrm{energy}}\in\{0.00,0.03,0.06,\ldots,0.60\} \qquad\text{(30)}
+```
+
+where $w_{\mathrm{energy}}$ is the weight of the motor-energy term in the MPC cost. The implementation evaluates 21 values.
+
+The motor energy proxy is
+
+```math
+E_{\mathrm{motor}}=\sum_{k=0}^{T-1}(\tau_{R,k}^2+\tau_{L,k}^2)\Delta t \qquad\text{(31)}
+```
+
+where $E_{\mathrm{motor}}$ is the torque-based motor-energy proxy, $\tau_{R,k}$ and $\tau_{L,k}$ are applied right and left wheel torques, and $\Delta t$ is the simulation time step.
 
 ---
 
@@ -362,6 +330,8 @@ where:
 
 **Figure 6.** Cumulative control effort on map 1. MPC uses substantially less effort than APF.
 
+The representative map is a dynamic timing problem: moving obstacles cross the natural lower-left to upper-right route. MPC reacts earlier because it evaluates future obstacle locations across the horizon. APF still reaches the goal, but its local repulsion produces sharper steering corrections, more near-obstacle events, and larger accumulated effort.
+
 ---
 
 ## 9. Robustness Validation on Five Maps
@@ -372,7 +342,7 @@ where:
 
 ![Map 2 comparison](results/map_2_comparison.gif)
 
-**Map 2.** Offset static bottleneck with a horizontal moving obstacle pair.
+**Map 2.** Staggered corridor with diagonal and vertical obstacle crossings. This map is intentionally different from map 1: the static obstacles are placed on opposite sides of the diagonal route and the moving obstacles use non-horizontal motion.
 
 ![Map 3 comparison](results/map_3_comparison.gif)
 
@@ -380,7 +350,7 @@ where:
 
 ![Map 4 comparison](results/map_4_comparison.gif)
 
-**Map 4.** Lower corridor with delayed crossing obstacles.
+**Map 4.** Lower corridor with delayed crossing obstacles. The timing makes APF pass closer to the moving obstacle, while MPC preserves a larger clearance through prediction.
 
 ![Map 5 comparison](results/map_5_comparison.gif)
 
@@ -390,26 +360,26 @@ where:
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 1 | MPC | True | 0.307 | 8.70 | 0.338 | 1.066 | 6 | 10.671 | 1.014 | 0.595 | 7.076 | 0 | False |
 | 1 | APF | True | 0.337 | 13.95 | 0.204 | 1.013 | 30 | 11.387 | 0.950 | 2.805 | 32.352 | 0 | False |
-| 2 | MPC | True | 0.338 | 8.85 | 0.273 | 1.088 | 7 | 10.687 | 1.012 | 0.644 | 7.045 | 0 | False |
-| 2 | APF | True | 0.339 | 14.55 | 0.200 | 0.975 | 34 | 11.487 | 0.942 | 3.073 | 34.274 | 0 | False |
+| 2 | MPC | True | 0.297 | 8.85 | 0.778 | 1.318 | 0 | 10.853 | 0.997 | 0.556 | 7.007 | 0 | False |
+| 2 | APF | True | 0.346 | 11.25 | 0.590 | 1.124 | 0 | 11.112 | 0.973 | 1.046 | 18.997 | 0 | False |
 | 3 | MPC | True | 0.339 | 8.55 | 0.546 | 0.992 | 0 | 10.610 | 1.019 | 0.495 | 7.258 | 0 | False |
 | 3 | APF | True | 0.343 | 12.00 | 0.372 | 0.867 | 3 | 11.357 | 0.952 | 1.803 | 26.894 | 0 | False |
-| 4 | MPC | True | 0.317 | 8.70 | 0.601 | 1.240 | 0 | 10.693 | 1.012 | 0.598 | 7.295 | 0 | False |
-| 4 | APF | True | 0.346 | 11.10 | 0.575 | 1.222 | 0 | 10.880 | 0.994 | 1.030 | 18.306 | 0 | False |
+| 4 | MPC | True | 0.294 | 8.85 | 0.589 | 1.132 | 0 | 10.777 | 1.004 | 0.641 | 7.512 | 0 | False |
+| 4 | APF | True | 0.346 | 11.40 | 0.445 | 1.118 | 1 | 11.110 | 0.974 | 1.310 | 21.844 | 0 | False |
 | 5 | MPC | True | 0.340 | 8.55 | 0.289 | 1.013 | 6 | 10.627 | 1.018 | 0.554 | 7.417 | 0 | False |
 | 5 | APF | True | 0.339 | 13.50 | 0.330 | 0.790 | 20 | 11.392 | 0.949 | 2.732 | 33.150 | 0 | False |
 
 | Metric | MPC average | APF average | MPC advantage |
 |---|---:|---:|---:|
-| Time to goal | 8.670 s | 13.020 s | 33.4% lower |
-| Average safety margin | 1.080 m | 0.973 m | 11.0% higher |
-| Near-obstacle events | 3.800 | 17.400 | 78.2% lower |
-| Path length | 10.658 m | 11.301 m | 5.7% lower |
-| Motion smoothness | 0.577 m | 2.289 m | 74.8% lower |
-| Control effort | 7.218 | 28.995 | 75.1% lower |
-| Heading aggressiveness | 3.985 | 32.189 | 87.6% lower |
+| Time to goal | 8.700 s | 12.420 s | 30.0% lower |
+| Average safety margin | 1.104 m | 0.982 m | 12.4% higher |
+| Near-obstacle events | 2.400 | 10.800 | 77.8% lower |
+| Path length | 10.708 m | 11.272 m | 5.0% lower |
+| Motion smoothness | 0.568 m | 1.939 m | 70.7% lower |
+| Control effort | 7.254 | 26.647 | 72.8% lower |
+| Heading aggressiveness | 3.802 | 28.396 | 86.6% lower |
 
-Across the five maps, both methods reach the goal with no collisions and no boundary violations. MPC is consistently smoother and lower effort. APF remains a valid baseline, but its local repulsive field causes sharper turns, more near-obstacle events, and higher cumulative effort.
+Across the five maps, both methods reach the goal with no collisions and no boundary violations. MPC is consistently smoother and lower effort. APF remains a valid baseline, but its local repulsive field causes sharper turns, more near-obstacle events, and higher cumulative effort. Map 2 confirms that the result is not tied to a single horizontal-crossing layout, while map 4 specifically highlights the value of predicting a delayed moving obstacle before it reaches the corridor.
 
 ---
 
@@ -417,18 +387,33 @@ Across the five maps, both methods reach the goal with no collisions and no boun
 
 ![Energy weight study](results/energy_weight_study.png)
 
-**Figure 7.** Energy penalty sweep on map 1.
+**Figure 7.** Energy penalty sweep on map 1 using 21 penalty weights from 0.00 to 0.60.
 
 | Energy weight | Final dist. | Time | Path length | Motor energy | Effort | Smoothness | Avg margin |
 |---:|---:|---:|---:|---:|---:|---:|---:|
 | 0.00 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
-| 0.01 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
-| 0.05 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
-| 0.10 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
-| 0.20 | 0.307 | 8.70 | 10.671 | 7.076 | 7.076 | 0.595 | 1.066 |
-| 0.50 | 0.284 | 8.85 | 10.727 | 6.975 | 6.975 | 0.628 | 1.091 |
+| 0.03 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
+| 0.06 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
+| 0.09 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
+| 0.12 | 0.307 | 8.70 | 10.671 | 7.076 | 7.076 | 0.595 | 1.066 |
+| 0.15 | 0.307 | 8.70 | 10.671 | 7.076 | 7.076 | 0.595 | 1.066 |
+| 0.18 | 0.307 | 8.70 | 10.671 | 7.076 | 7.076 | 0.595 | 1.066 |
+| 0.21 | 0.330 | 8.70 | 10.648 | 7.054 | 7.054 | 0.601 | 1.065 |
+| 0.24 | 0.331 | 8.70 | 10.661 | 7.280 | 7.280 | 0.600 | 1.068 |
+| 0.27 | 0.278 | 8.85 | 10.750 | 7.174 | 7.174 | 0.648 | 1.093 |
+| 0.30 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
+| 0.33 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
+| 0.36 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
+| 0.39 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
+| 0.42 | 0.323 | 8.70 | 10.658 | 7.060 | 7.060 | 0.595 | 1.067 |
+| 0.45 | 0.323 | 8.70 | 10.658 | 7.060 | 7.060 | 0.595 | 1.067 |
+| 0.48 | 0.323 | 8.70 | 10.658 | 7.060 | 7.060 | 0.595 | 1.067 |
+| 0.51 | 0.284 | 8.85 | 10.727 | 6.975 | 6.975 | 0.628 | 1.091 |
+| 0.54 | 0.284 | 8.85 | 10.727 | 6.975 | 6.975 | 0.628 | 1.091 |
+| 0.57 | 0.295 | 8.85 | 10.699 | 7.021 | 7.021 | 0.619 | 1.088 |
+| 0.60 | 0.295 | 8.85 | 10.699 | 7.021 | 7.021 | 0.619 | 1.088 |
 
-Increasing the energy penalty reduces the motor-energy proxy from 7.503 to 6.975 in this representative map. The highest tested weight gives the lowest energy use but slightly increases time and path length. The selected value, 0.20, balances energy consumption, tracking, safety margin, and smoothness.
+Increasing the energy penalty generally reduces aggressive torque usage. The trend is not perfectly monotonic because the optimizer is sampling-based and feasible candidates can change discretely, but the higher-weight region produces lower motor-energy values than the zero-weight case. Very large weights slightly increase travel time or path length because the controller becomes more conservative. The selected default value keeps the path fast and smooth while still reducing motor effort.
 
 ---
 
