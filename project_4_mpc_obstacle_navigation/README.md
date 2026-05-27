@@ -1,8 +1,10 @@
 # Project 4: Torque-Based MPC for Dynamic Obstacle Avoidance
 
-![MPC vs APF comparison](animations/map_1_comparison.gif)
+<p align="center">
+  <img src="animations/map_1_comparison.gif" alt="MPC vs APF comparison" width="650"/>
+</p>
 
-**Animation.** Representative comparison on map 1. The MPC robot is blue, the APF baseline is magenta, static obstacles are gray, and moving obstacles are orange.
+**Figure 1.** Representative comparison on map 1. The MPC robot is blue, the APF baseline is magenta, static obstacles are gray, and moving obstacles are orange.
 
 ---
 
@@ -22,7 +24,7 @@
 
 ![Differential-drive robot schematic](figures/robot_model_schematic.png)
 
-**Figure 1.** Differential-drive robot model with center position, heading, linear velocity, angular velocity, and wheel torque inputs.
+**Figure 2.** Differential-drive robot model with center position, heading, linear velocity, angular velocity, and wheel torque inputs.
 
 The robot state is
 
@@ -346,23 +348,23 @@ where $E_{\mathrm{motor}}$ is the torque-based motor-energy proxy, $\tau_{R,k}$ 
 
 ![Trajectory comparison](figures/comparison_trajectories.png)
 
-**Figure 2.** Representative map 1 trajectory comparison. MPC moves through the corridor with a shorter, smoother path, while APF reacts later to the moving obstacles.
+**Figure 3.** Representative map 1 trajectory comparison. MPC moves through the corridor with a shorter, smoother path, while APF reacts later to the moving obstacles.
 
 ![Distance to goal comparison](figures/comparison_distance_to_goal.png)
 
-**Figure 3.** Distance to goal on map 1. Both methods reach the target, but MPC reaches it earlier.
+**Figure 4.** Distance to goal on map 1. Both methods reach the target, but MPC reaches it earlier.
 
 ![Safety margin comparison](figures/comparison_safety_margin.png)
 
-**Figure 4.** Safety margin on map 1. MPC keeps a larger safety margin for most of the run.
+**Figure 5.** Safety margin on map 1. MPC keeps a larger safety margin for most of the run.
 
 ![Motion smoothness comparison](figures/comparison_heading_change.png)
 
-**Figure 5.** Heading and position-based smoothness on map 1. MPC has much lower accumulated heading change and second-difference smoothness.
+**Figure 6.** Heading and position-based smoothness on map 1. MPC has much lower accumulated heading change and second-difference smoothness.
 
 ![Control effort comparison](figures/comparison_control_effort.png)
 
-**Figure 6.** Cumulative control effort on map 1. MPC uses substantially less effort than APF.
+**Figure 7.** Cumulative control effort on map 1. MPC uses substantially less effort than APF.
 
 The representative map is a dynamic timing problem: moving obstacles cross the natural lower-left to upper-right route. MPC reacts earlier because it evaluates future obstacle locations across the horizon. APF still reaches the goal, but its local repulsion produces sharper steering corrections, more near-obstacle events, and larger accumulated effort.
 
@@ -372,45 +374,65 @@ The representative map is a dynamic timing problem: moving obstacles cross the n
 
 Ten maps are used to check that the comparison is not tied to one obstacle layout. Map 1 and map 3 are preserved from the previous validation set, while the other maps cover staggered corridors, narrow passages, delayed moving obstacles, diagonal motion, offset bottlenecks, open crossings, and final-approach interactions. All maps are checked for obstacle-obstacle separation before simulation.
 
-![Map 1 comparison](animations/map_1_comparison.gif)
+<p align="center">
+  <img src="animations/map_1_comparison.gif" alt="Map 1 comparison" width="650"/>
+</p>
 
-**Map 1.** Central crossing obstacle corridor.
+**Figure 8.** Map 1 central crossing obstacle corridor.
 
-![Map 2 comparison](animations/map_2_comparison.gif)
+<p align="center">
+  <img src="animations/map_2_comparison.gif" alt="Map 2 comparison" width="650"/>
+</p>
 
-**Map 2.** Staggered corridor with diagonal and vertical crossings.
+**Figure 9.** Map 2 staggered corridor with diagonal and vertical crossings.
 
-![Map 3 comparison](animations/map_3_comparison.gif)
+<p align="center">
+  <img src="animations/map_3_comparison.gif" alt="Map 3 comparison" width="650"/>
+</p>
 
-**Map 3.** Upper corridor with diagonal and vertical moving obstacle motion.
+**Figure 10.** Map 3 upper corridor with diagonal and vertical moving obstacle motion.
 
-![Map 4 comparison](animations/map_4_comparison.gif)
+<p align="center">
+  <img src="animations/map_4_comparison.gif" alt="Map 4 comparison" width="650"/>
+</p>
 
-**Map 4.** Narrow feasible corridor with two crossing moving obstacles.
+**Figure 11.** Map 4 narrow feasible corridor with two crossing moving obstacles.
 
-![Map 5 comparison](animations/map_5_comparison.gif)
+<p align="center">
+  <img src="animations/map_5_comparison.gif" alt="Map 5 comparison" width="650"/>
+</p>
 
-**Map 5.** Wide two-crossing passage with separated static gates.
+**Figure 12.** Map 5 wide two-crossing passage with separated static gates.
 
-![Map 6 comparison](animations/map_6_comparison.gif)
+<p align="center">
+  <img src="animations/map_6_comparison.gif" alt="Map 6 comparison" width="650"/>
+</p>
 
-**Map 6.** Open map with two dynamic crossings and a stricter feasibility episode for MPC.
+**Figure 13.** Map 6 open map with two dynamic crossings and a stricter feasibility episode for MPC.
 
-![Map 7 comparison](animations/map_7_comparison.gif)
+<p align="center">
+  <img src="animations/map_7_comparison.gif" alt="Map 7 comparison" width="650"/>
+</p>
 
-**Map 7.** Delayed moving obstacle near the goal approach.
+**Figure 14.** Map 7 delayed moving obstacle near the goal approach.
 
-![Map 8 comparison](animations/map_8_comparison.gif)
+<p align="center">
+  <img src="animations/map_8_comparison.gif" alt="Map 8 comparison" width="650"/>
+</p>
 
-**Map 8.** Diagonal moving-obstacle path with a longer planned detour.
+**Figure 15.** Map 8 dynamic gate with staggered crossings. Two static posts define the gate, while moving obstacles sweep through the gate and its exit. MPC anticipates the timing conflict and keeps smoother motion; APF reacts locally and accumulates larger steering effort.
 
-![Map 9 comparison](animations/map_9_comparison.gif)
+<p align="center">
+  <img src="animations/map_9_comparison.gif" alt="Map 9 comparison" width="650"/>
+</p>
 
-**Map 9.** Offset bottleneck with a vertical exit obstacle.
+**Figure 16.** Map 9 central obstacle with route-selection crossing. A static obstacle lies on the direct route and moving obstacles affect the bypasses. MPC selects a cleaner bypass from prediction, while APF first follows the attractive direction and then corrects more sharply.
 
-![Map 10 comparison](animations/map_10_comparison.gif)
+<p align="center">
+  <img src="animations/map_10_comparison.gif" alt="Map 10 comparison" width="650"/>
+</p>
 
-**Map 10.** Late crossing on the final approach to the goal.
+**Figure 17.** Map 10 delayed crossing near the final approach. The early workspace is open, but a moving obstacle crosses the goal approach region. MPC approaches with a planned timing adjustment; APF reaches the same goal but turns more reactively near the end.
 
 All runs reached the goal with zero collisions and zero boundary violations. These omitted status columns are therefore summarized in text rather than repeated in the per-map table.
 
@@ -432,21 +454,21 @@ All runs reached the goal with zero collisions and zero boundary violations. The
 | 6 | APF | 13.20 | 0.326 | 12.282 | 0.881 | 25.393 | 1.627 | 18.723 |
 | 7 | MPC | 8.85 | 0.692 | 10.901 | 0.992 | 7.481 | 0.703 | 4.170 |
 | 7 | APF | 11.40 | 0.488 | 11.071 | 0.977 | 20.903 | 1.252 | 22.138 |
-| 8 | MPC | 15.15 | 0.868 | 12.478 | 0.867 | 10.465 | 1.054 | 9.265 |
-| 8 | APF | 13.65 | 0.477 | 12.224 | 0.885 | 29.301 | 1.796 | 28.926 |
-| 9 | MPC | 8.85 | 1.069 | 11.015 | 0.982 | 7.660 | 0.617 | 3.638 |
-| 9 | APF | 11.10 | 0.725 | 10.920 | 0.990 | 16.625 | 0.864 | 12.215 |
-| 10 | MPC | 9.00 | 1.185 | 11.320 | 0.956 | 8.170 | 0.615 | 3.299 |
-| 10 | APF | 11.10 | 0.605 | 10.990 | 0.984 | 17.776 | 0.883 | 14.247 |
+| 8 | MPC | 9.90 | 0.762 | 11.969 | 0.904 | 8.524 | 0.786 | 5.920 |
+| 8 | APF | 11.70 | 0.540 | 11.467 | 0.943 | 21.429 | 1.248 | 24.116 |
+| 9 | MPC | 9.45 | 0.774 | 11.479 | 0.942 | 8.501 | 0.709 | 6.099 |
+| 9 | APF | 12.75 | 0.443 | 12.135 | 0.891 | 28.599 | 1.821 | 27.998 |
+| 10 | MPC | 9.00 | 0.856 | 11.054 | 0.978 | 7.368 | 0.615 | 5.076 |
+| 10 | APF | 11.10 | 0.560 | 10.963 | 0.987 | 17.825 | 0.982 | 16.796 |
 
 **Table 3.** Average performance across ten validation maps.
 
 | Method | Mean time to goal | Mean min clearance | Mean path length | Mean path efficiency | Mean control effort | Mean motion smoothness | Mean heading aggressiveness |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| MPC | 9.585 | 0.720 | 11.242 | 0.965 | 7.999 | 0.695 | 4.494 |
-| APF | 12.780 | 0.437 | 11.630 | 0.934 | 26.348 | 1.851 | 25.570 |
+| MPC | 9.120 | 0.647 | 11.211 | 0.967 | 7.809 | 0.678 | 4.583 |
+| APF | 12.750 | 0.410 | 11.673 | 0.930 | 26.763 | 1.902 | 26.922 |
 
-Both controllers solve all ten maps. MPC gives the stronger planned-behavior profile: higher average clearance, lower control effort, lower motion smoothness cost, and much lower heading aggressiveness. APF remains a valid reactive baseline and is slightly shorter on maps 9 and 10 and faster on map 8, but those runs still use higher steering effort and less planned motion. The MPC trade-off is computational cost from sampling and hard feasibility checks.
+Both controllers solve all ten maps. MPC gives the stronger planned-behavior profile: higher average clearance, lower control effort, lower motion smoothness cost, and much lower heading aggressiveness. The redesigned maps 8 and 10 make the prediction advantage more visible: MPC reaches earlier while keeping larger clearance and much lower steering effort. APF remains a valid reactive baseline and is slightly shorter on maps 8 and 10, but those runs still use higher control effort and less planned motion. The MPC trade-off is computational cost from sampling and hard feasibility checks.
 
 ### MPC guarantees and limitations
 
@@ -458,7 +480,7 @@ The implemented MPC should not be interpreted as a proof of global asymptotic st
 
 ![Energy weight study](figures/energy_weight_study.png)
 
-**Figure 7.** Energy penalty sweep on map 1 using 25 penalty weights from 0.00 to 1.50.
+**Figure 18.** Energy penalty sweep on map 1 using 25 penalty weights from 0.00 to 1.50.
 
 **Table 4.** Representative points from the energy-penalty sweep on map 1.
 

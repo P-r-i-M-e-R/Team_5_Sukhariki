@@ -73,6 +73,27 @@ def run_energy_study(scenario) -> list[dict]:
     return records
 
 
+def validate_generated_artifacts(figures_dir, animations_dir, scenario_names) -> None:
+    required_paths = [
+        figures_dir / "robot_model_schematic.png",
+        figures_dir / "comparison_trajectories.png",
+        figures_dir / "comparison_distance_to_goal.png",
+        figures_dir / "comparison_safety_margin.png",
+        figures_dir / "comparison_heading_change.png",
+        figures_dir / "comparison_control_effort.png",
+        figures_dir / "energy_weight_study.png",
+    ]
+    required_paths.extend(animations_dir / f"{name}_comparison.gif" for name in scenario_names)
+
+    print("Generated artifacts check:")
+    for path in required_paths:
+        if not path.exists():
+            raise FileNotFoundError(f"Missing generated artifact: {path}")
+        if path.stat().st_size == 0:
+            raise RuntimeError(f"Generated artifact is empty: {path}")
+        print(f"  [OK] {path.as_posix()}")
+
+
 def main() -> None:
     figures_dir, animations_dir = ensure_dirs()
     clean_outputs(figures_dir, animations_dir)
@@ -111,6 +132,7 @@ def main() -> None:
     plot_control_effort(results, figures_dir / "comparison_control_effort.png", representative)
     energy_records = run_energy_study(representative)
     plot_energy_weight_study(energy_records, figures_dir / "energy_weight_study.png")
+    validate_generated_artifacts(figures_dir, animations_dir, [scenario.name for scenario in all_scenarios])
     print(f"Figures saved to {figures_dir.resolve()}")
     print(f"Animations saved to {animations_dir.resolve()}")
 
