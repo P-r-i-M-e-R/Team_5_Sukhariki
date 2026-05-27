@@ -368,7 +368,7 @@ The representative map is a dynamic timing problem: moving obstacles cross the n
 
 ---
 
-## 9. Robustness Validation on Ten Maps
+## 9. Validation on Ten Maps
 
 Ten maps are used to check that the comparison is not tied to one obstacle layout. Map 1 and map 3 are preserved from the previous validation set, while the other maps cover staggered corridors, narrow passages, delayed moving obstacles, diagonal motion, offset bottlenecks, open crossings, and final-approach interactions. All maps are checked for obstacle-obstacle separation before simulation.
 
