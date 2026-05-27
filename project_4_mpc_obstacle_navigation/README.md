@@ -14,7 +14,7 @@
 
 **Class of methods:** torque-based Model Predictive Control. At each time step, the controller predicts future robot states over a finite horizon, evaluates predicted obstacle positions, rejects infeasible trajectories that violate safety constraints, and selects a torque sequence minimizing goal-tracking error, path length, control effort, smoothness, and energy-related cost. Only the first torque input is applied, and the optimization is repeated at the next step.
 
-**Comparison:** the MPC controller is compared with an Artificial Potential Field baseline. APF uses attractive forces toward the goal and repulsive forces from obstacles. Unlike MPC, APF is reactive and does not optimize a future torque sequence over a horizon. The comparison evaluates goal reaching, obstacle clearance, near-obstacle events, path length, path efficiency, smoothness, heading aggressiveness, control effort, and boundary violations.
+**Comparison:** the MPC controller is compared with an Artificial Potential Field baseline. APF uses attractive forces toward the goal and repulsive forces from obstacles. Unlike MPC, APF is reactive and does not optimize a future torque sequence over a horizon. The comparison evaluates goal reaching, obstacle clearance, path length, path efficiency, smoothness, heading aggressiveness, control effort, and boundary violations.
 
 ---
 
@@ -222,12 +222,14 @@ where $U_{\mathrm{rep},j}$ is the repulsive potential from obstacle $j$, $k_{\ma
 4. Reject infeasible MPC candidates that violate safety, input, velocity, or terminal constraints.
 5. Select the feasible torque sequence with the lowest cost and apply only its first input.
 6. Run APF on the same scenario using the same robot model limits.
-7. Log goal distance, clearance, safety margin, path length, smoothness, effort, time, collisions, and boundary violations.
-8. Repeat this procedure for five obstacle maps and generate GIFs and plots.
+7. Log goal distance, clearance, path length, smoothness, effort, time, collisions, and boundary violations.
+8. Repeat this procedure for ten obstacle maps and generate GIFs and plots.
 
 ---
 
 ## 7. Simulation Setup and Metrics
+
+**Table 1.** Simulation parameters used for all validation maps.
 
 | Quantity | Value |
 |---|---:|
@@ -301,10 +303,10 @@ where $m_{\mathrm{safe},k}$ is the minimum obstacle clearance at step $k$, and $
 The energy study uses the grid
 
 ```math
-w_{\mathrm{energy}}\in\{0.00,0.03,0.06,\ldots,0.60\} \qquad\text{(31)}
+w_{\mathrm{energy}}\in\mathrm{round}_2(\mathrm{linspace}(0.00,1.50,25)) \qquad\text{(31)}
 ```
 
-where $w_{\mathrm{energy}}$ is the weight of the motor-energy term in the MPC cost. The implementation evaluates 21 values.
+where $w_{\mathrm{energy}}$ is the weight of the motor-energy term in the MPC cost, $\mathrm{linspace}(0.00,1.50,25)$ is a uniform grid of 25 values, and $\mathrm{round}_2$ means rounding each value to two decimal places in the implementation.
 
 The motor energy proxy is
 
@@ -342,7 +344,9 @@ The representative map is a dynamic timing problem: moving obstacles cross the n
 
 ---
 
-## 9. Robustness Validation on Five Maps
+## 9. Robustness Validation on Ten Maps
+
+Ten maps are used to check that the comparison is not tied to one obstacle layout. Map 1 and map 3 are preserved from the previous validation set, while the other maps cover staggered corridors, narrow passages, delayed moving obstacles, diagonal motion, offset bottlenecks, open crossings, and final-approach interactions. All maps are checked for obstacle-obstacle separation before simulation.
 
 ![Map 1 comparison](results/map_1_comparison.gif)
 
@@ -350,7 +354,7 @@ The representative map is a dynamic timing problem: moving obstacles cross the n
 
 ![Map 2 comparison](results/map_2_comparison.gif)
 
-**Map 2.** Staggered corridor with diagonal and vertical obstacle crossings. This map is intentionally different from map 1: the static obstacles are placed on opposite sides of the diagonal route and the moving obstacles use non-horizontal motion.
+**Map 2.** Staggered corridor with diagonal and vertical crossings.
 
 ![Map 3 comparison](results/map_3_comparison.gif)
 
@@ -358,36 +362,71 @@ The representative map is a dynamic timing problem: moving obstacles cross the n
 
 ![Map 4 comparison](results/map_4_comparison.gif)
 
-**Map 4.** Lower corridor with delayed crossing obstacles. The timing makes APF pass closer to the moving obstacle, while MPC preserves a larger clearance through prediction.
+**Map 4.** Narrow feasible corridor with two crossing moving obstacles.
 
 ![Map 5 comparison](results/map_5_comparison.gif)
 
-**Map 5.** Wider passage with two separated moving obstacle interactions.
+**Map 5.** Wide two-crossing passage with separated static gates.
 
-| Map | Method | Reached goal | Final dist. | Time | Min clearance | Avg margin | Near events | Path length | Efficiency | Smoothness | Effort | Boundary violations | Collision |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | MPC | True | 0.307 | 8.70 | 0.338 | 1.066 | 6 | 10.671 | 1.014 | 0.595 | 7.076 | 0 | False |
-| 1 | APF | True | 0.337 | 13.95 | 0.204 | 1.013 | 30 | 11.387 | 0.950 | 2.805 | 32.352 | 0 | False |
-| 2 | MPC | True | 0.297 | 8.85 | 0.778 | 1.318 | 0 | 10.853 | 0.997 | 0.556 | 7.007 | 0 | False |
-| 2 | APF | True | 0.346 | 11.25 | 0.590 | 1.124 | 0 | 11.112 | 0.973 | 1.046 | 18.997 | 0 | False |
-| 3 | MPC | True | 0.339 | 8.55 | 0.546 | 0.992 | 0 | 10.610 | 1.019 | 0.495 | 7.258 | 0 | False |
-| 3 | APF | True | 0.343 | 12.00 | 0.372 | 0.867 | 3 | 11.357 | 0.952 | 1.803 | 26.894 | 0 | False |
-| 4 | MPC | True | 0.294 | 8.85 | 0.589 | 1.132 | 0 | 10.777 | 1.004 | 0.641 | 7.512 | 0 | False |
-| 4 | APF | True | 0.346 | 11.40 | 0.445 | 1.118 | 1 | 11.110 | 0.974 | 1.310 | 21.844 | 0 | False |
-| 5 | MPC | True | 0.340 | 8.55 | 0.289 | 1.013 | 6 | 10.627 | 1.018 | 0.554 | 7.417 | 0 | False |
-| 5 | APF | True | 0.339 | 13.50 | 0.330 | 0.790 | 20 | 11.392 | 0.949 | 2.732 | 33.150 | 0 | False |
+![Map 6 comparison](results/map_6_comparison.gif)
 
-| Metric | MPC average | APF average | MPC advantage |
-|---|---:|---:|---:|
-| Time to goal | 8.700 s | 12.420 s | 30.0% lower |
-| Average safety margin | 1.104 m | 0.982 m | 12.4% higher |
-| Near-obstacle events | 2.400 | 10.800 | 77.8% lower |
-| Path length | 10.708 m | 11.272 m | 5.0% lower |
-| Motion smoothness | 0.568 m | 1.939 m | 70.7% lower |
-| Control effort | 7.254 | 26.647 | 72.8% lower |
-| Heading aggressiveness | 3.802 | 28.396 | 86.6% lower |
+**Map 6.** Open map with two dynamic crossings and a stricter feasibility episode for MPC.
 
-Across the five maps, both methods reach the goal with no collisions and no boundary violations. MPC is consistently smoother and lower effort. APF remains a valid baseline, but its local repulsive field causes sharper turns, more near-obstacle events, and higher cumulative effort. Map 2 confirms that the result is not tied to a single horizontal-crossing layout, while map 4 specifically highlights the value of predicting a delayed moving obstacle before it reaches the corridor.
+![Map 7 comparison](results/map_7_comparison.gif)
+
+**Map 7.** Delayed moving obstacle near the goal approach.
+
+![Map 8 comparison](results/map_8_comparison.gif)
+
+**Map 8.** Diagonal moving-obstacle path with a longer planned detour.
+
+![Map 9 comparison](results/map_9_comparison.gif)
+
+**Map 9.** Offset bottleneck with a vertical exit obstacle.
+
+![Map 10 comparison](results/map_10_comparison.gif)
+
+**Map 10.** Late crossing on the final approach to the goal.
+
+All runs reached the goal with zero collisions and zero boundary violations. These omitted status columns are therefore summarized in text rather than repeated in the per-map table.
+
+**Table 2.** Per-map MPC and APF comparison across the ten validation maps.
+
+| Map | Method | Time to goal | Min clearance | Path length | Path efficiency | Control effort | Motion smoothness | Heading aggressiveness |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | MPC | 8.70 | 0.338 | 10.671 | 1.014 | 7.076 | 0.595 | 3.875 |
+| 1 | APF | 13.95 | 0.204 | 11.387 | 0.950 | 32.352 | 2.805 | 37.215 |
+| 2 | MPC | 8.85 | 0.778 | 10.853 | 0.997 | 7.007 | 0.556 | 3.263 |
+| 2 | APF | 11.25 | 0.590 | 11.112 | 0.973 | 18.997 | 1.046 | 15.209 |
+| 3 | MPC | 8.55 | 0.546 | 10.610 | 1.019 | 7.258 | 0.495 | 3.429 |
+| 3 | APF | 12.00 | 0.372 | 11.357 | 0.952 | 26.894 | 1.803 | 28.296 |
+| 4 | MPC | 8.70 | 0.259 | 10.641 | 1.017 | 7.136 | 0.580 | 3.842 |
+| 4 | APF | 16.65 | 0.249 | 13.567 | 0.797 | 42.088 | 3.701 | 40.321 |
+| 5 | MPC | 8.55 | 0.289 | 10.627 | 1.018 | 7.417 | 0.554 | 3.985 |
+| 5 | APF | 13.50 | 0.330 | 11.392 | 0.949 | 33.150 | 2.732 | 38.409 |
+| 6 | MPC | 19.50 | 0.278 | 10.597 | 1.021 | 7.510 | 0.483 | 3.638 |
+| 6 | APF | 13.20 | 0.326 | 12.282 | 0.881 | 25.393 | 1.627 | 18.723 |
+| 7 | MPC | 8.85 | 0.589 | 10.761 | 1.005 | 7.163 | 0.628 | 4.207 |
+| 7 | APF | 11.40 | 0.488 | 11.071 | 0.977 | 20.903 | 1.252 | 22.138 |
+| 8 | MPC | 14.55 | 0.706 | 12.192 | 0.887 | 9.835 | 1.082 | 8.508 |
+| 8 | APF | 13.65 | 0.477 | 12.224 | 0.885 | 29.301 | 1.796 | 28.926 |
+| 9 | MPC | 9.15 | 0.969 | 10.851 | 0.997 | 6.858 | 0.593 | 3.889 |
+| 9 | APF | 11.10 | 0.725 | 10.920 | 0.990 | 16.625 | 0.864 | 12.215 |
+| 10 | MPC | 9.15 | 1.030 | 11.146 | 0.970 | 7.403 | 0.617 | 3.706 |
+| 10 | APF | 11.10 | 0.605 | 10.990 | 0.984 | 17.776 | 0.883 | 14.247 |
+
+**Table 3.** Average performance across ten validation maps.
+
+| Method | Mean time to goal | Mean min clearance | Mean path length | Mean path efficiency | Mean control effort | Mean motion smoothness | Mean heading aggressiveness |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| MPC | 10.455 | 0.578 | 10.895 | 0.995 | 7.466 | 0.618 | 4.234 |
+| APF | 12.780 | 0.437 | 11.630 | 0.934 | 26.348 | 1.851 | 25.570 |
+
+Both controllers solve all ten maps. MPC gives the stronger planned-behavior profile: higher average clearance, shorter average path length, better path efficiency, much lower control effort, lower motion smoothness cost, and much lower heading aggressiveness. APF remains a valid reactive baseline and is faster on maps 6 and 8, but those faster runs come with larger path curvature or higher effort. The MPC trade-off is computational cost, especially in map 6 where the hard feasibility checks trigger emergency braking while still preserving collision-free behavior.
+
+### MPC guarantees and limitations
+
+The implemented MPC should not be interpreted as a proof of global asymptotic stability for all possible dynamic-obstacle configurations. Because the safe set changes with time and the wheel torques are bounded, there may exist configurations for which no feasible collision-free trajectory exists. Therefore, the appropriate guarantee is conditional: if the prediction model is accurate over the horizon and the constrained MPC problem remains feasible at each step, the controller preserves recursive feasibility by replanning from feasible predicted trajectories and keeps the robot inside the imposed safety constraints. In the terminal phase, when obstacle avoidance no longer conflicts with goal tracking, the terminal cost and goal-tracking terms provide practical convergence to the target. The 10-map validation is therefore used as numerical evidence of practical safety and convergence, not as an unconditional proof for all environments.
 
 ---
 
@@ -395,33 +434,19 @@ Across the five maps, both methods reach the goal with no collisions and no boun
 
 ![Energy weight study](results/energy_weight_study.png)
 
-**Figure 7.** Energy penalty sweep on map 1 using 21 penalty weights from 0.00 to 0.60.
+**Figure 7.** Energy penalty sweep on map 1 using 25 penalty weights from 0.00 to 1.50.
 
-| Energy weight | Final dist. | Time | Path length | Motor energy | Effort | Smoothness | Avg margin |
+**Table 4.** Representative points from the energy-penalty sweep on map 1.
+
+| Energy weight | Goal error | Time | Path length | Motor energy | Effort | Smoothness | Mean margin |
 |---:|---:|---:|---:|---:|---:|---:|---:|
 | 0.00 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
-| 0.03 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
-| 0.06 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
-| 0.09 | 0.318 | 8.70 | 10.684 | 7.503 | 7.503 | 0.601 | 1.068 |
-| 0.12 | 0.307 | 8.70 | 10.671 | 7.076 | 7.076 | 0.595 | 1.066 |
-| 0.15 | 0.307 | 8.70 | 10.671 | 7.076 | 7.076 | 0.595 | 1.066 |
-| 0.18 | 0.307 | 8.70 | 10.671 | 7.076 | 7.076 | 0.595 | 1.066 |
-| 0.21 | 0.330 | 8.70 | 10.648 | 7.054 | 7.054 | 0.601 | 1.065 |
-| 0.24 | 0.331 | 8.70 | 10.661 | 7.280 | 7.280 | 0.600 | 1.068 |
-| 0.27 | 0.278 | 8.85 | 10.750 | 7.174 | 7.174 | 0.648 | 1.093 |
-| 0.30 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
-| 0.33 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
-| 0.36 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
-| 0.39 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
-| 0.42 | 0.323 | 8.70 | 10.658 | 7.060 | 7.060 | 0.595 | 1.067 |
-| 0.45 | 0.323 | 8.70 | 10.658 | 7.060 | 7.060 | 0.595 | 1.067 |
-| 0.48 | 0.323 | 8.70 | 10.658 | 7.060 | 7.060 | 0.595 | 1.067 |
-| 0.51 | 0.284 | 8.85 | 10.727 | 6.975 | 6.975 | 0.628 | 1.091 |
-| 0.54 | 0.284 | 8.85 | 10.727 | 6.975 | 6.975 | 0.628 | 1.091 |
-| 0.57 | 0.295 | 8.85 | 10.699 | 7.021 | 7.021 | 0.619 | 1.088 |
-| 0.60 | 0.295 | 8.85 | 10.699 | 7.021 | 7.021 | 0.619 | 1.088 |
+| 0.38 | 0.318 | 8.70 | 10.663 | 7.047 | 7.047 | 0.592 | 1.067 |
+| 0.75 | 0.338 | 8.70 | 10.647 | 7.425 | 7.425 | 0.605 | 1.065 |
+| 1.12 | 0.300 | 8.85 | 10.721 | 7.472 | 7.472 | 0.616 | 1.091 |
+| 1.50 | 0.295 | 8.85 | 10.686 | 7.061 | 7.061 | 0.591 | 1.084 |
 
-Increasing the energy penalty generally reduces aggressive torque usage. The trend is not perfectly monotonic because the optimizer is sampling-based and feasible candidates can change discretely, but the higher-weight region produces lower motor-energy values than the zero-weight case. Very large weights slightly increase travel time or path length because the controller becomes more conservative. The selected default value keeps the path fast and smooth while still reducing motor effort.
+The wider coefficient range shows the practical trade-off more clearly. Moderate energy weights reduce the motor-energy proxy relative to the zero-weight case without changing the time to goal. Very high weights remain feasible in this scenario, but they can slightly increase travel time because the controller avoids aggressive torque usage. The trend is not perfectly monotonic because the optimizer is sampling-based and feasible candidates can change discretely from one weight to the next.
 
 ---
 
@@ -442,9 +467,11 @@ project_4_mpc_obstacle_navigation/
 └── results/
 ```
 
+**Table 5.** Source files and their roles.
+
 | File | Purpose |
 |---|---|
-| `environment.py` | five scenarios, robot parameters, obstacles, and validation |
+| `environment.py` | ten scenarios, robot parameters, obstacles, and validation |
 | `robot_model.py` | differential-drive dynamics and rollout functions |
 | `mpc_controller.py` | constrained sampling MPC with torque inputs |
 | `potential_field_controller.py` | APF baseline |
@@ -469,7 +496,7 @@ cd project_4_mpc_obstacle_navigation
 python main.py
 ```
 
-The command regenerates five comparison GIFs, representative plots, and the energy-weight study in `results/`.
+The command regenerates ten comparison GIFs, representative plots, and the energy-weight study in `results/`.
 
 ---
 
@@ -477,7 +504,7 @@ The command regenerates five comparison GIFs, representative plots, and the ener
 
 This project implements a torque-based Model Predictive Controller for a differential-drive robot navigating among static and moving circular obstacles. The controller predicts future robot motion and future obstacle positions, rejects unsafe candidate trajectories, and optimizes wheel torques for goal tracking, smoothness, path efficiency, and motor-energy use.
 
-The five-map validation shows that the MPC controller reaches the goal in all tested scenarios while satisfying map boundaries and avoiding collisions. APF also reaches the goal in all scenarios, which makes the comparison fair, but MPC provides a better safety-efficiency trade-off: fewer near-obstacle events, lower effort, smoother motion, and shorter travel time on average.
+The ten-map validation shows that the MPC controller reaches the goal in all tested scenarios while satisfying map boundaries and avoiding collisions. APF also reaches the goal in all scenarios, which makes the comparison fair, but MPC provides a better safety-efficiency trade-off: higher average clearance, lower effort, smoother motion, and lower heading aggressiveness.
 
 The main limitation is computational cost. The sampling-based MPC is much slower than APF, and the guarantees are practical and scenario-tested rather than global. Future work could use a deterministic constrained optimizer, add uncertainty in obstacle prediction, and test denser multi-agent environments.
 
@@ -486,8 +513,6 @@ The main limitation is computational cost. The sampling-based MPC is much slower
 ## 14. References
 
 [1] Huang, J., Liu, Z., Zeng, J., Chi, X., & Su, H. (2023). Obstacle Avoidance for Unicycle-Modelled Mobile Robots with Time-varying Control Barrier Functions. arXiv:2307.08227.
-
-[2] Advanced Control Methods course lecture notes. Model Predictive Control, 2026.
 
 ---
 

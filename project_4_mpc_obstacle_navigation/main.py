@@ -66,7 +66,7 @@ def print_terminal_decrease_check(scenario) -> None:
 
 
 def run_energy_study(scenario) -> list[dict]:
-    weights = np.round(np.linspace(0.0, 0.60, 21), 2)
+    weights = np.round(np.linspace(0.0, 1.50, 25), 2)
     records = []
     for weight in weights:
         result = run_mpc(scenario, weights=MPCWeights(energy=weight))
