@@ -1,20 +1,11 @@
-"""Metrics and Lyapunov functions for Project 4."""
+"""Metrics for Project 4."""
 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
-
 import numpy as np
 
 from robot_model import wrap_angle
-
-
-@dataclass(frozen=True)
-class LyapunovWeights:
-    q_theta: float = 0.60
-    q_v: float = 0.18
-    q_omega: float = 0.12
 
 
 def goal_distance(state: np.ndarray, target: np.ndarray) -> float:
@@ -27,20 +18,6 @@ def target_heading(state: np.ndarray, target: np.ndarray) -> float:
 
 def heading_error(state: np.ndarray, target: np.ndarray) -> float:
     return wrap_angle(target_heading(state, target) - state[2])
-
-
-def lyapunov_value(state: np.ndarray, target: np.ndarray, weights: LyapunovWeights | None = None) -> float:
-    weights = weights or LyapunovWeights()
-    position_error = state[:2] - target
-    e_theta = heading_error(state, target)
-    v = state[3]
-    omega = state[4]
-    return float(
-        0.5 * np.dot(position_error, position_error)
-        + 0.5 * weights.q_theta * e_theta**2
-        + 0.5 * weights.q_v * v**2
-        + 0.5 * weights.q_omega * omega**2
-    )
 
 
 def min_obstacle_clearance(state: np.ndarray, time: float, obstacles, robot_radius: float) -> float:

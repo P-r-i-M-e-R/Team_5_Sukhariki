@@ -17,10 +17,12 @@ import numpy as np
 from environment import Scenario, default_config, default_obstacles, default_start_state, default_target
 
 
-def ensure_dirs() -> Path:
-    results = Path("results")
-    results.mkdir(exist_ok=True)
-    return results
+def ensure_dirs() -> tuple[Path, Path]:
+    figures = Path("figures")
+    animations = Path("animations")
+    figures.mkdir(exist_ok=True)
+    animations.mkdir(exist_ok=True)
+    return figures, animations
 
 
 def obstacle_path(obstacle, times: np.ndarray) -> np.ndarray:

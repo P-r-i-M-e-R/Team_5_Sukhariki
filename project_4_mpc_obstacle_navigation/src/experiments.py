@@ -16,7 +16,6 @@ from metrics import (
     cumulative_motion_smoothness,
     goal_distance,
     heading_aggressiveness,
-    lyapunov_value,
     min_obstacle_clearance,
     motion_smoothness,
     path_length,
@@ -24,7 +23,7 @@ from metrics import (
     progress_efficiency,
     torque_energy,
 )
-from mpc_controller import LyapunovMPCController, MPCWeights
+from mpc_controller import TorqueMPCController, MPCWeights
 from potential_field_controller import ArtificialPotentialFieldController
 from robot_model import step_torque, step_velocity
 
@@ -42,8 +41,6 @@ class SimulationResult:
     safety_margins: np.ndarray
     cumulative_heading_change: np.ndarray
     cumulative_motion_smoothness: np.ndarray
-    lyapunov_values: np.ndarray
-    lyapunov_delta: np.ndarray
     final_distance: float
     min_clearance: float
     min_safety_margin: float
@@ -72,7 +69,7 @@ def run_mpc(scenario: Scenario | None = None, weights: MPCWeights | None = None)
     robot_params = default_robot_params()
     obstacles = default_obstacles(scenario)
     target = default_target(scenario)
-    controller = LyapunovMPCController(config, robot_params, obstacles, target, weights)
+    controller = TorqueMPCController(config, robot_params, obstacles, target, weights)
     state = default_start_state(scenario)
     states = [state.copy()]
     controls = []
@@ -154,8 +151,6 @@ def build_result(
         [min_obstacle_clearance(state, t, obstacles, config.robot_radius) for state, t in zip(states, times)]
     )
     safety_margins = clearances - config.safety_margin
-    lyapunov = np.array([lyapunov_value(state, target) for state in states])
-    delta = np.diff(lyapunov)
     total_path_length = path_length(states)
     initial_distance = float(distances[0])
     final_distance = float(distances[-1])
@@ -173,8 +168,6 @@ def build_result(
         safety_margins=safety_margins,
         cumulative_heading_change=cumulative_heading_change(states),
         cumulative_motion_smoothness=cumulative_motion_smoothness(states),
-        lyapunov_values=lyapunov,
-        lyapunov_delta=delta,
         final_distance=final_distance,
         min_clearance=float(np.min(clearances)),
         min_safety_margin=float(np.min(safety_margins)),

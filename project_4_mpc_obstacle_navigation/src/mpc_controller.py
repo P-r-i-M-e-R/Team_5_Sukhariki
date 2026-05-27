@@ -1,4 +1,4 @@
-"""Lyapunov-based sampling MPC with wheel torque inputs."""
+"""Sampling-based torque MPC with wheel torque inputs."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from metrics import LyapunovWeights, heading_error, lyapunov_value
+from metrics import heading_error
 from robot_model import rollout_torque, rollout_torque_batch, step_torque
 
 
@@ -14,8 +14,6 @@ from robot_model import rollout_torque, rollout_torque_batch, step_torque
 class MPCWeights:
     goal: float = 1.4
     terminal_goal: float = 12.0
-    lyapunov: float = 1.0
-    lyapunov_increase: float = 18.0
     obstacle: float = 60.0
     collision: float = 16000.0
     control: float = 0.05
@@ -35,7 +33,7 @@ class MPCResult:
     used_emergency: bool = False
 
 
-class LyapunovMPCController:
+class TorqueMPCController:
     def __init__(
         self,
         config,
@@ -49,14 +47,13 @@ class LyapunovMPCController:
         self.obstacles = obstacles
         self.target = np.array(target, dtype=float)
         self.weights = weights or MPCWeights()
-        self.lyapunov_weights = LyapunovWeights()
         self.rng = np.random.default_rng(config.random_seed)
         self.previous_solution: np.ndarray | None = None
         self.previous_terminal_state: np.ndarray | None = None
         self.previous_control = np.zeros(2, dtype=float)
         self.samples = 180
         self.iterations = 4
-        self.rho_term = 2.0
+        self.terminal_radius = 2.25
         self.shifted_fallback_count = 0
         self.emergency_count = 0
         self.infeasible_iteration_count = 0
@@ -166,11 +163,6 @@ class LyapunovMPCController:
         goal_cost = self.weights.goal * np.sum(errors**2, axis=(1, 2))
         terminal_cost = self.weights.terminal_goal * np.sum(errors[:, -1, :] ** 2, axis=1)
 
-        lyap = self._lyapunov_batch(trajectories)
-        lyap_cost = self.weights.lyapunov * np.sum(lyap[:, 1:], axis=1)
-        lyap_delta = np.diff(lyap, axis=1)
-        lyap_increase_cost = self.weights.lyapunov_increase * np.sum(np.maximum(0.0, lyap_delta) ** 2, axis=1)
-
         obstacle_cost = self._obstacle_cost_batch(positions, time)
         step_lengths = np.linalg.norm(np.diff(trajectories[:, :, :2], axis=1), axis=2)
         path_length_cost = self.weights.path_length * np.sum(step_lengths, axis=1)
@@ -185,8 +177,6 @@ class LyapunovMPCController:
         return (
             goal_cost
             + terminal_cost
-            + lyap_cost
-            + lyap_increase_cost
             + obstacle_cost
             + path_length_cost
             + boundary_cost
@@ -209,7 +199,8 @@ class LyapunovMPCController:
 
         input_ok = np.all(np.abs(controls) <= self.robot_params.tau_max + 1e-9, axis=(1, 2))
         velocity_ok = np.all(
-            (np.abs(trajectories[:, 1:, 3]) <= self.robot_params.v_max + 1e-9)
+            (trajectories[:, 1:, 3] >= -1e-9)
+            & (trajectories[:, 1:, 3] <= self.robot_params.v_max + 1e-9)
             & (np.abs(trajectories[:, 1:, 4]) <= self.robot_params.omega_max + 1e-9),
             axis=1,
         )
@@ -221,25 +212,23 @@ class LyapunovMPCController:
             clearance = np.linalg.norm(positions - centers, axis=2) - obstacle.radius - self.config.robot_radius
             obstacle_ok &= np.all(clearance >= self.config.safety_margin - 1e-9, axis=1)
 
-        terminal_values = np.array(
-            [lyapunov_value(trajectory[-1], self.target, self.lyapunov_weights) for trajectory in trajectories]
-        )
-        terminal_ok = terminal_values <= self.rho_term + 1e-9
+        terminal_distances = np.linalg.norm(trajectories[:, -1, :2] - self.target.reshape(1, 2), axis=1)
+        terminal_ok = terminal_distances <= self.terminal_radius + 1e-9
         return boundary_ok & input_ok & velocity_ok & obstacle_ok & terminal_ok
 
     def in_terminal_set(self, state: np.ndarray) -> bool:
-        return lyapunov_value(state, self.target, self.lyapunov_weights) <= self.rho_term + 1e-9
+        return np.linalg.norm(state[:2] - self.target) <= self.terminal_radius + 1e-9
 
     def terminal_policy(self, state: np.ndarray) -> np.ndarray:
         best_control = self.stabilizing_torque_guess(state)
         best_state = step_torque(state, best_control, self.robot_params, self.config.dt, None, 0.0)
-        best_value = lyapunov_value(best_state, self.target, self.lyapunov_weights)
+        best_value = np.linalg.norm(best_state[:2] - self.target)
         grid = np.linspace(-self.robot_params.tau_max, self.robot_params.tau_max, 11)
         for tau_r in grid:
             for tau_l in grid:
                 control = np.array([tau_r, tau_l], dtype=float)
                 next_state = step_torque(state, control, self.robot_params, self.config.dt, None, 0.0)
-                value = lyapunov_value(next_state, self.target, self.lyapunov_weights)
+                value = np.linalg.norm(next_state[:2] - self.target)
                 if value < best_value:
                     best_value = value
                     best_control = control
@@ -259,55 +248,6 @@ class LyapunovMPCController:
             -self.robot_params.tau_max,
             self.robot_params.tau_max,
         )
-
-    def terminal_decrease_holds(self, state: np.ndarray) -> bool:
-        control = self.terminal_policy(state)
-        next_state = step_torque(state, control, self.robot_params, self.config.dt, None, 0.0)
-        return lyapunov_value(next_state, self.target, self.lyapunov_weights) <= (
-            lyapunov_value(state, self.target, self.lyapunov_weights) + 1e-9
-        )
-
-    def verify_terminal_decrease(self, samples: int = 240) -> dict[str, float]:
-        rng = np.random.default_rng(self.config.random_seed + 101)
-        tested = 0
-        satisfied = 0
-        max_delta = -np.inf
-        attempts = 0
-        while tested < samples and attempts < 20 * samples:
-            attempts += 1
-            radius = 1.0 * np.sqrt(rng.random())
-            angle = rng.uniform(-np.pi, np.pi)
-            position = self.target + radius * np.array([np.cos(angle), np.sin(angle)])
-            heading = np.arctan2(self.target[1] - position[1], self.target[0] - position[0]) + rng.uniform(-0.25, 0.25)
-            state = np.array(
-                [
-                    position[0],
-                    position[1],
-                    heading,
-                    rng.uniform(0.0, 0.2),
-                    rng.uniform(-0.15, 0.15),
-                ],
-                dtype=float,
-            )
-            if not self.in_terminal_set(state):
-                continue
-            control = self.terminal_policy(state)
-            next_state = step_torque(state, control, self.robot_params, self.config.dt, None, 0.0)
-            delta = lyapunov_value(next_state, self.target, self.lyapunov_weights) - lyapunov_value(
-                state, self.target, self.lyapunov_weights
-            )
-            max_delta = max(max_delta, float(delta))
-            satisfied += int(delta <= 1e-9)
-            tested += 1
-        ratio = satisfied / tested if tested else 0.0
-        return {"tested": tested, "satisfied": satisfied, "ratio": ratio, "max_delta": float(max_delta)}
-
-    def _lyapunov_batch(self, trajectories: np.ndarray) -> np.ndarray:
-        values = np.zeros(trajectories.shape[:2], dtype=float)
-        for i in range(trajectories.shape[0]):
-            for k in range(trajectories.shape[1]):
-                values[i, k] = lyapunov_value(trajectories[i, k], self.target, self.lyapunov_weights)
-        return values
 
     def _obstacle_cost_batch(self, positions: np.ndarray, time: float) -> np.ndarray:
         future_times = time + self.config.dt * np.arange(1, self.config.horizon + 1)

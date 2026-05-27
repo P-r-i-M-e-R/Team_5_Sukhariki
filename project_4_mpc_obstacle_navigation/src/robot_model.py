@@ -51,7 +51,7 @@ def step_torque(
             next_position[0],
             next_position[1],
             wrap_angle(theta + omega * dt),
-            np.clip(v + v_dot * dt, -params.v_max, params.v_max),
+            np.clip(v + v_dot * dt, 0.0, params.v_max),
             np.clip(omega + omega_dot * dt, -params.omega_max, params.omega_max),
         ],
         dtype=float,
@@ -146,7 +146,7 @@ def rollout_torque_batch(
                 next_x,
                 next_y,
                 (theta + omega * dt + np.pi) % (2.0 * np.pi) - np.pi,
-                np.clip(v + v_dot * dt, -params.v_max, params.v_max),
+                np.clip(v + v_dot * dt, 0.0, params.v_max),
                 np.clip(omega + omega_dot * dt, -params.omega_max, params.omega_max),
             ]
         )
