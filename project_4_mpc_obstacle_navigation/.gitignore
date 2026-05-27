@@ -1,0 +1,4 @@
+__pycache__/
+.matplotlib_cache/
+!animations/*.gif
+!figures/*.png
